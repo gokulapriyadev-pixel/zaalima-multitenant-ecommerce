@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
-function Home() {
+
+const Home = () => {
   return (
     <main className="bg-white">
 

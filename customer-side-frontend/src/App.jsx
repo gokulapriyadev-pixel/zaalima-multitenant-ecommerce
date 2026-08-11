@@ -5,6 +5,7 @@ import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Regiser'
+import Footer from './components/Footer'
 
 function App() {
 
@@ -19,6 +20,8 @@ function App() {
         <Route path= "/login" element={<Login />} />
         <Route path= "/register" element={<Register />} />
       </Routes>
+<Footer />
+
     </BrowserRouter>
     </>
   )
