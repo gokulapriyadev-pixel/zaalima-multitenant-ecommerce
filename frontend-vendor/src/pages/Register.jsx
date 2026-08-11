@@ -1,9 +1,15 @@
+import AuthCard from "../components/AuthCard";
+import Button from "../components/Button";
+import Input from "../components/Input";
+
 function Register() {
   return (
-    <div style={{ padding: "2rem", textAlign: "center" }}>
-      <h1>Vendor Registration</h1>
-      <p>Registration form will go here.</p>
-    </div>
+    <AuthCard title="Vendor Registration">
+      <Input label="Store name" type="text" placeholder="Your store name" />
+      <Input label="Email" type="email" placeholder="you@example.com" />
+      <Input label="Password" type="password" placeholder="••••••••" />
+      <Button variant="primary">Create account</Button>
+    </AuthCard>
   );
 }
 
