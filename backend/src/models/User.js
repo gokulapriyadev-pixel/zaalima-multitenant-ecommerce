@@ -37,22 +37,17 @@ const userSchema = new mongoose.Schema({
 // ==========================================
 // Mongoose Middleware: Hash Password Before Saving
 // ==========================================
-userSchema.pre('save', async function(next) {
+// FIX: Removed 'next' parameter. Modern Mongoose handles async functions automatically.
+userSchema.pre('save', async function() {
   // Only hash the password if it has been modified (or is new)
-  // This prevents double-hashing if we update the user's name or email later
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
 
-  try {
-    // Generate a salt with 10 rounds
-    const salt = await bcrypt.genSalt(10);
-    // Hash the password using the generated salt
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  // If bcrypt throws an error here, the async function automatically 
+  // rejects the promise, and our Express global error handler catches it safely.
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // ==========================================
