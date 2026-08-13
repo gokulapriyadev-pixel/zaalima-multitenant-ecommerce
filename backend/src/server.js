@@ -43,14 +43,17 @@ app.get('/api/health', (req, res) => {
 
 // Future Route Imports will go here:
 app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/stores', require('./routes/storeRoutes'));
+app.use('/api/stores', require('./routes/storeRoutes'));
 
 // ==========================================
 // Global Error Handler (Fallback)
 // ==========================================
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
+  // If the status code is already set by the controller (e.g., 400 or 401), use it.
+  // Otherwise, default to 500 (Internal Server Error).
+  const statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
+  
+  res.status(statusCode).json({
     status: 'error',
     message: err.message || 'Internal Server Error',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
