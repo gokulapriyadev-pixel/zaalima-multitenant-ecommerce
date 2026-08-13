@@ -15,7 +15,7 @@ function App() {
     <>
       <BrowserRouter>
 
-   <Routes>
+        <Routes>
 
           <Route element={<StoreLayout />}>
             <Route path="/" element={<Home />} />

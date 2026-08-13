@@ -1,16 +1,71 @@
 
+import { CircleAlert, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 function Login() {
-  const handleSubmit = (e) => {
-    e.preventDefault();
 
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  })
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [serverError, setServerError] = useState("");
+
+
+  // Login button stays disabled until both fields have at least 3 characters
+  const isFormValid = formData.email.trim().length >= 3 && formData.password.trim().length >= 3;
+
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // if error is present, clear it when user starts typing
+    if (error) {
+      setError("");
+    }
+    if (serverError) {
+      setServerError("");
+    }
+  }
+
+  const handleSubmit = (e) => {
+
+    e.preventDefault();
+    setServerError("");
+
+
+
+    if (!formData.email || !formData.password) {
+      setError("Please fill in both fields.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+
+    setError("");
+    setIsSubmitting(true);
     // Backend login API will be connected later
     console.log("Customer login");
   };
 
   return (
-    <main className="min-h-[calc(100vh-64px)] bg-gray-50 px-4 py-12">
+
+    <main className="flex min-h-screen items-center justify-center bg-blue-50 px-4 py-12">
       <div className="mx-auto w-full max-w-md">
 
         {/* Header */}
@@ -26,8 +81,26 @@ function Login() {
 
         {/* Login Card */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+          {error && (
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-3">
+
+              <CircleAlert />
+              <p className="text-sm font-medium text-red-500">
+                {error}
+              </p>
+            </div>
+          )}
+          {serverError && (
+            <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-3">
+              <CircleAlert />
+              <p className="text-sm font-medium text-red-600">
+                {serverError}
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} noValidate className="space-y-6">
 
             {/* Email */}
             <div>
@@ -43,8 +116,10 @@ function Login() {
                 id="email"
                 name="email"
                 placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleChange}
                 autoComplete="email"
-                required
+
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
               />
             </div>
@@ -67,29 +142,46 @@ function Login() {
                 </Link>
               </div>
 
-              <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
-              />
+              <div className="relative">
+
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  autoComplete="current-password"
+
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-black "
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+                {/* tabIndex - keeps tab order clean (users tab from password field straight to the submit button, not through the icon).*/}
+
+              </div>
             </div>
 
             {/* Login Button */}
             <button
               type="submit"
-              className="w-full rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.99]"
+              className="w-full cursor-pointer rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={!isFormValid || isSubmitting}
             >
-              Login
+              {isSubmitting ? "Logging in..." : "Login"}
             </button>
 
           </form>
 
           {/* Register Link */}
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-8 text-center text-sm text-gray-600">
             Don't have an account?{" "}
             <Link
               to="/register"
@@ -103,6 +195,7 @@ function Login() {
 
       </div>
     </main>
+
   );
 }
 
