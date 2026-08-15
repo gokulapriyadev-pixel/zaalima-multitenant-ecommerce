@@ -1,16 +1,89 @@
 
+import { CircleAlert } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 function Register() {
+
+  const [formData, setFormData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+
+  const [error, setError] = useState("");
+  const [serverError, setServerError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (error) {
+      setError("");
+    }
+    if (serverError) {
+      setServerError("");
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    setServerError("");
+
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    
+    setError("");
+    setIsSubmitting(true);
 
     // Backend registration API will be connected later
     console.log("Customer registration");
   };
 
   return (
-    <main className="min-h-[calc(100vh-64px)] bg-gray-50 px-4 py-12">
+    <main className="flex min-h-[calc(100vh-64px)] bg-gray-50 ">
+{/* left side */}
+   <div className="relative hidden w-1/2 items-center overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-blue-800 lg:flex">
+    {/* decorative circles */}
+    <div className="pointer-events-none absolute inset-0">
+      <div className="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-blue-300/40" />
+      <div className="absolute right-16 top-20 h-32 w-32 rounded-full bg-blue-200/30" />
+      <div className="absolute -bottom-24 -right-10 h-80 w-80 rounded-full bg-blue-400/50" />
+      <div className="absolute -bottom-32 left-16 h-72 w-72 rounded-full bg-blue-300/40" />
+    </div>
+
+        {/* content on top of the shapes */}
+        <div className="relative z-10 px-16">
+      <h1 className="text-5xl font-extrabold leading-tight text-white">
+        Welcome to Zaalima
+      </h1>
+      <p className="mt-2 text-lg font-semibold uppercase tracking-wide text-blue-100">
+        Your one-stop shop for everything you love
+      </p>
+      <p className="mt-6 max-w-sm text-sm leading-relaxed text-blue-100/90">
+        Create your account and start shopping with us. Enjoy exclusive
+        deals, faster checkout, and order tracking — all in one place.
+      </p>
+    </div>
+      </div>
+
+{/* Right side */}
+      <div className="flex w-full items-center justify-center px-4 py-12 lg:w-1/2">
       <div className="mx-auto w-full max-w-md">
 
         {/* Header */}
@@ -27,7 +100,16 @@ function Register() {
         {/* Register Card */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+   {(error || serverError) && (
+              <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-3">
+                <CircleAlert size={18} className="shrink-0 text-red-500" />
+                <p className="text-sm font-medium text-red-600">
+                  {error || serverError}
+                </p>
+              </div>
+            )}
+
+          <form onSubmit={handleSubmit} noValidate className="space-y-6">
 
             {/* Full Name */}
             <div>
@@ -44,7 +126,8 @@ function Register() {
                 name="name"
                 placeholder="Enter your full name"
                 autoComplete="name"
-                required
+                value={formData.name}
+                onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
               />
             </div>
@@ -64,7 +147,9 @@ function Register() {
                 name="email"
                 placeholder="Enter your email"
                 autoComplete="email"
-                required
+                value={formData.email}
+                onChange={handleChange}
+
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
               />
             </div>
@@ -84,7 +169,8 @@ function Register() {
                 name="password"
                 placeholder="Create a password"
                 autoComplete="new-password"
-                required
+                value={formData.password}
+                onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
               />
             </div>
@@ -104,7 +190,8 @@ function Register() {
                 name="confirmPassword"
                 placeholder="Confirm your password"
                 autoComplete="new-password"
-                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
               />
             </div>
@@ -112,7 +199,7 @@ function Register() {
             {/* Register Button */}
             <button
               type="submit"
-              className="w-full rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.99]"
+              className="w-full rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.99] cursor-pointer"
             >
               Create Account
             </button>
@@ -132,6 +219,7 @@ function Register() {
 
         </div>
 
+      </div>
       </div>
     </main>
   );
