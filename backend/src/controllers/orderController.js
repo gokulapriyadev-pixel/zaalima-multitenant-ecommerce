@@ -2,19 +2,15 @@ const asyncHandler = require('express-async-handler');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Store = require('../models/Store');
+const Cart = require('../models/Cart');
 
 /**
- * @desc    Create a new order (Checkout)
+ * @desc    Create a new order (Checkout from Cart)
  * @route   POST /api/orders
  * @access  Private (Logged in users)
  */
 const createOrder = asyncHandler(async (req, res) => {
-  const { storeId, orderItems, shippingAddress } = req.body;
-
-  if (!orderItems || orderItems.length === 0) {
-    res.status(400);
-    throw new Error('No order items provided');
-  }
+  const { storeId, shippingAddress } = req.body;
 
   // 1. Verify the store exists
   const store = await Store.findById(storeId);
@@ -23,10 +19,19 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error('Store not found');
   }
 
+  // 2. Fetch the user's cart for this specific store
+  const cart = await Cart.findOne({ customerId: req.user._id, storeId });
+
+  if (!cart || cart.items.length === 0) {
+    res.status(400);
+    throw new Error('Your cart is empty for this store.');
+  }
+
   let totalAmount = 0;
   const processedProducts = [];
-  // 2. Loop through requested items, validate inventory, and lock in prices
-  for (const item of orderItems) {
+
+  // 3. Loop through requested items, validate inventory, and lock in prices
+  for (const item of cart.items) {
     const product = await Product.findOne({ _id: item.productId, storeId: storeId });
       
     if (!product) {
@@ -50,7 +55,7 @@ const createOrder = asyncHandler(async (req, res) => {
     });
   }
 
-  // 3. Create the order
+  // 4. Create the order
   const order = await Order.create({
     storeId,
     customerId: req.user._id,
@@ -61,12 +66,17 @@ const createOrder = asyncHandler(async (req, res) => {
     orderStatus: 'processing'
   });
 
-  // 4. Deduct the purchased quantities from the actual Product inventory
+  // 5. Deduct the purchased quantities from the actual Product inventory
   for (const item of processedProducts) {
     await Product.findByIdAndUpdate(item.productId, {
       $inc: { inventoryCount: -item.quantity } // Subtracts the purchased quantity
     });
   }
+
+  // 6. EMPTY THE CART
+  // After a successful order, we clear the items array from the cart
+  cart.items = [];
+  await cart.save();
 
   res.status(201).json(order);
 });
@@ -99,8 +109,8 @@ const getStoreOrders = asyncHandler(async (req, res) => {
 
   // 2. Fetch the orders for this store
   const orders = await Order.find({ storeId: req.params.storeId })
-  .populate('customerId', 'name email')
-  .populate('products.productId', 'name price');
+   .populate('customerId', 'name email')
+   .populate('products.productId', 'name price');
   res.json(orders);
 });
 
