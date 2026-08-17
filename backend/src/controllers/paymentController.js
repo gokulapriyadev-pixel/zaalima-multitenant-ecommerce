@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const razorpay = require('../config/razorpay');
 const Order = require('../models/Order');
@@ -10,7 +11,6 @@ const createRazorpayOrder = asyncHandler(async (req, res) => {
     throw new Error('Order ID is required');
   }
 
-  // Find the existing MongoDB order
   const order = await Order.findOne({
     _id: orderId,
     customerId: req.user._id
@@ -26,7 +26,6 @@ const createRazorpayOrder = asyncHandler(async (req, res) => {
     throw new Error('Order is already paid');
   }
 
-  // Use the amount calculated by the backend
   const options = {
     amount: Math.round(order.totalAmount * 100),
     currency: 'INR',
@@ -35,7 +34,6 @@ const createRazorpayOrder = asyncHandler(async (req, res) => {
 
   const razorpayOrder = await razorpay.orders.create(options);
 
-  // Save Razorpay order ID in MongoDB
   order.razorpayOrderId = razorpayOrder.id;
   await order.save();
 
@@ -46,12 +44,6 @@ const createRazorpayOrder = asyncHandler(async (req, res) => {
     mongoOrderId: order._id
   });
 });
-
-module.exports = {
-  createRazorpayOrder,
-  verifyRazorpayPayment
-};
-const crypto = require('crypto');
 
 const verifyRazorpayPayment = asyncHandler(async (req, res) => {
   const {
@@ -98,3 +90,8 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     paymentStatus: order.paymentStatus
   });
 });
+
+module.exports = {
+  createRazorpayOrder,
+  verifyRazorpayPayment
+};
