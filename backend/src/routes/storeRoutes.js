@@ -3,7 +3,8 @@ const router = express.Router();
 const { 
   createStore, 
   getMyStore, 
-  getStoreBySlug 
+  getStoreBySlug,
+  deleteStore
 } = require('../controllers/storeController');
 const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 
@@ -14,6 +15,7 @@ const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 // We use 'protect' to ensure the user is logged in, and 'authorizeRoles' to ensure they are a vendor
 router.post('/', protect, authorizeRoles('vendor', 'super_admin'), createStore);
 router.get('/my-store', protect, authorizeRoles('vendor', 'super_admin'), getMyStore);
+router.delete('/my-store', protect, authorizeRoles('vendor', 'super_admin'), deleteStore);
 
 // ==========================================
 // Public Routes

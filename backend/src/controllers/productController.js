@@ -55,6 +55,37 @@ const getStoreCategories = asyncHandler(async (req, res) => {
     res.json(categories);
 });
 
+/**
+ * @desc    Delete a category
+ * @route   DELETE /api/products/categories/:categoryId
+ * @access  Private (Vendor)
+ */
+const deleteCategory = asyncHandler(async (req, res) => {
+    const storeId = await getVendorStoreId(req.user._id);
+    
+    // Safety check: Prevent deleting categories that still have products
+    const productsInCategory = await Product.countDocuments({ 
+        categoryId: req.params.categoryId, 
+        storeId 
+    });
+
+    if (productsInCategory > 0) {
+        res.status(400);
+        throw new Error('Cannot delete this category because it contains active products. Please delete or reassign the products first.');
+    }
+
+    const category = await Category.findOneAndDelete({ 
+        _id: req.params.categoryId, 
+        storeId 
+    });
+
+    if (!category) {
+        res.status(404);
+        throw new Error('Category not found or you do not have permission to delete it.');
+    }
+
+    res.json({ message: 'Category removed successfully' });
+});
 
 // ==========================================
 // PRODUCT CONTROLLERS
@@ -112,9 +143,32 @@ const getStoreProducts = asyncHandler(async (req, res) => {
     res.json(products);
 });
 
+/**
+ * @desc    Delete a product
+ * @route   DELETE /api/products/:productId
+ * @access  Private (Vendor)
+ */
+const deleteProduct = asyncHandler(async (req, res) => {
+    const storeId = await getVendorStoreId(req.user._id);
+    
+    const product = await Product.findOneAndDelete({ 
+        _id: req.params.productId, 
+        storeId 
+    });
+
+    if (!product) {
+        res.status(404);
+        throw new Error('Product not found or you do not have permission to delete it.');
+    }
+
+    res.json({ message: 'Product removed successfully' });
+});
+
 module.exports = {
     createCategory,
     getStoreCategories,
+    deleteCategory,
     createProduct,
-    getStoreProducts
+    getStoreProducts,
+    deleteProduct
 };

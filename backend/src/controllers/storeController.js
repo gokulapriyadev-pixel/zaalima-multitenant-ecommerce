@@ -75,8 +75,30 @@ const getStoreBySlug = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @desc    Deactivate a store (Soft Delete)
+ * @route   DELETE /api/stores/my-store
+ * @access  Private (Vendor only)
+ */
+const deleteStore = asyncHandler(async (req, res) => {
+  const store = await Store.findOne({ ownerId: req.user._id });
+
+  if (!store) {
+    res.status(404);
+    throw new Error('Store not found.');
+  }
+
+  // Soft delete: We deactivate the store instead of physically deleting it.
+  // This ensures past customer orders don't break when looking for the store reference.
+  store.isActive = false;
+  await store.save();
+
+  res.json({ message: 'Store successfully deactivated and removed from public view.' });
+});
+
 module.exports = {
   createStore,
   getMyStore,
   getStoreBySlug,
+  deleteStore
 };
