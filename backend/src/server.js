@@ -45,6 +45,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/stores', require('./routes/storeRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
 
 // ==========================================
 // Global Error Handler (Fallback)
