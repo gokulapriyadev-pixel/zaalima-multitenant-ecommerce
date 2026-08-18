@@ -4,7 +4,8 @@ const {
   createStore, 
   getMyStore, 
   getStoreBySlug,
-  deleteStore
+  deleteStore,
+  updateStore
 } = require('../controllers/storeController');
 const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 
@@ -16,6 +17,7 @@ const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 router.post('/', protect, authorizeRoles('vendor', 'super_admin'), createStore);
 router.get('/my-store', protect, authorizeRoles('vendor', 'super_admin'), getMyStore);
 router.delete('/my-store', protect, authorizeRoles('vendor', 'super_admin'), deleteStore);
+router.put('/my-store', protect, authorizeRoles('vendor', 'super_admin'), updateStore);
 
 // ==========================================
 // Public Routes

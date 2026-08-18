@@ -96,9 +96,42 @@ const deleteStore = asyncHandler(async (req, res) => {
   res.json({ message: 'Store successfully deactivated and removed from public view.' });
 });
 
+/**
+ * @desc    Update store details
+ * @route   PUT /api/stores/my-store
+ * @access  Private (Vendor only)
+ */
+const updateStore = asyncHandler(async (req, res) => {
+  const store = await Store.findOne({ ownerId: req.user._id });
+
+  if (!store) {
+    res.status(404);
+    throw new Error('Store not found.');
+  }
+
+  // We don't typically allow updating the slug to prevent breaking old links,
+  // but we can let them update text, descriptions, and theme colors.
+  store.name = req.body.name || store.name;
+  store.description = req.body.description || store.description;
+  store.contactEmail = req.body.contactEmail || store.contactEmail;
+  
+  if (req.body.themeColors) {
+    store.themeColors = { ...store.themeColors, ...req.body.themeColors };
+  }
+  
+  // If they want to reactivate a deleted store
+  if (req.body.isActive !== undefined) {
+    store.isActive = req.body.isActive;
+  }
+
+  const updatedStore = await store.save();
+  res.json(updatedStore);
+});
+
 module.exports = {
   createStore,
   getMyStore,
   getStoreBySlug,
-  deleteStore
+  deleteStore,
+  updateStore
 };

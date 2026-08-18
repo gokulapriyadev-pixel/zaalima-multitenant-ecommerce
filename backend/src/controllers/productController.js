@@ -87,6 +87,37 @@ const deleteCategory = asyncHandler(async (req, res) => {
     res.json({ message: 'Category removed successfully' });
 });
 
+/**
+ * @desc    Update a category
+ * @route   PUT /api/products/categories/:categoryId
+ * @access  Private (Vendor)
+ */
+const updateCategory = asyncHandler(async (req, res) => {
+    const { name, slug } = req.body;
+    const storeId = await getVendorStoreId(req.user._id);
+
+    const category = await Category.findOne({ _id: req.params.categoryId, storeId });
+    if (!category) {
+        res.status(404);
+        throw new Error('Category not found');
+    }
+
+    // If they are changing the slug, ensure the new slug isn't already taken
+    if (slug && slug !== category.slug) {
+        const slugTaken = await Category.findOne({ storeId, slug });
+        if (slugTaken) {
+            res.status(400);
+            throw new Error('This slug is already used by another category.');
+        }
+    }
+
+    category.name = name || category.name;
+    category.slug = slug || category.slug;
+
+    const updatedCategory = await category.save();
+    res.json(updatedCategory);
+});
+
 // ==========================================
 // PRODUCT CONTROLLERS
 // ==========================================
@@ -164,11 +195,59 @@ const deleteProduct = asyncHandler(async (req, res) => {
     res.json({ message: 'Product removed successfully' });
 });
 
+/**
+ * @desc    Update a product
+ * @route   PUT /api/products/:productId
+ * @access  Private (Vendor)
+ */
+const updateProduct = asyncHandler(async (req, res) => {
+    const storeId = await getVendorStoreId(req.user._id);
+    const product = await Product.findOne({ _id: req.params.productId, storeId });
+
+    if (!product) {
+        res.status(404);
+        throw new Error('Product not found');
+    }
+
+    // If changing slug, verify uniqueness
+    if (req.body.slug && req.body.slug !== product.slug) {
+        const slugExists = await Product.findOne({ storeId, slug: req.body.slug });
+        if (slugExists) {
+            res.status(400);
+            throw new Error('A product with this URL slug already exists in your store.');
+        }
+    }
+
+    // If changing category, verify the new category belongs to this store
+    if (req.body.categoryId && req.body.categoryId !== product.categoryId?.toString()) {
+        const categoryValid = await Category.findOne({ _id: req.body.categoryId, storeId });
+        if (!categoryValid) {
+            res.status(400);
+            throw new Error('Invalid category ID for this store.');
+        }
+    }
+
+    product.name = req.body.name || product.name;
+    product.slug = req.body.slug || product.slug;
+    product.description = req.body.description || product.description;
+    product.categoryId = req.body.categoryId || product.categoryId;
+    
+    // Check for undefined explicitly because 0 and false are valid values
+    if (req.body.price !== undefined) product.price = req.body.price;
+    if (req.body.inventoryCount !== undefined) product.inventoryCount = req.body.inventoryCount;
+    if (req.body.isPublished !== undefined) product.isPublished = req.body.isPublished;
+
+    const updatedProduct = await product.save();
+    res.json(updatedProduct);
+});
+
 module.exports = {
     createCategory,
     getStoreCategories,
     deleteCategory,
+    updateCategory,
     createProduct,
     getStoreProducts,
-    deleteProduct
+    deleteProduct,
+    updateProduct
 };
