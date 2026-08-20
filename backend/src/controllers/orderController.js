@@ -149,9 +149,47 @@ const getStoreAnalytics = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Update order status
+ * @route   PUT /api/orders/:orderId/status
+ * @access  Private (Vendor only)
+ */
+const updateOrderStatus = asyncHandler(async (req, res) => {
+  const { orderStatus } = req.body;
+  const { orderId } = req.params;
+
+  // 1. Validate the requested status against allowed values in our Model
+  const validStatuses = ['processing', 'shipped', 'delivered', 'cancelled'];
+  if (!validStatuses.includes(orderStatus)) {
+    res.status(400);
+    throw new Error('Invalid order status. Allowed values: processing, shipped, delivered, cancelled');
+  }
+
+  // 2. Find the order and populate the storeId so we can check ownership
+  const order = await Order.findById(orderId).populate('storeId');
+
+  if (!order) {
+      res.status(404);
+      throw new Error('Order not found');
+  }
+
+  // 3. Security Check: Does the logged-in vendor actually own this store?
+  if (order.storeId.ownerId.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('You do not have permission to update this order.');
+  }
+
+  // 4. Update and save
+  order.orderStatus = orderStatus;
+  const updatedOrder = await order.save();
+
+  res.json(updatedOrder);
+});
+
 module.exports = {
   createOrder,
   getMyOrders,
   getStoreOrders,
-  getStoreAnalytics
+  getStoreAnalytics,
+  updateOrderStatus
 };

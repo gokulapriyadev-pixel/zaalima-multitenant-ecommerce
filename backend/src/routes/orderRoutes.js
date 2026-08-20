@@ -4,7 +4,8 @@ const {
   createOrder, 
   getMyOrders, 
   getStoreOrders,
-  getStoreAnalytics
+  getStoreAnalytics,
+  updateOrderStatus
 } = require('../controllers/orderController');
 const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 
@@ -22,5 +23,6 @@ router.get('/my-orders', protect, getMyOrders);
 router.get('/analytics/my-store', protect, authorizeRoles('vendor', 'super_admin'), getStoreAnalytics);
 
 router.get('/store/:storeId', protect, authorizeRoles('vendor', 'super_admin'), getStoreOrders);
+router.put('/:orderId/status', protect, authorizeRoles('vendor', 'super_admin'), updateOrderStatus);
 
 module.exports = router;
