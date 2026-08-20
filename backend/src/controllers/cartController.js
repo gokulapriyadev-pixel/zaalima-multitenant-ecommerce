@@ -41,6 +41,21 @@ const addToCart = asyncHandler(async (req, res) => {
   // 2. Find or create the user's cart for this store
   let cart = await Cart.findOne({ customerId: req.user._id, storeId });
 
+  // Calculate how many of this item are ALREADY in the cart
+  let currentQuantityInCart = 0;
+  if (cart) {
+    const existingItem = cart.items.find(item => item.productId.toString() === productId);
+    if (existingItem) {
+      currentQuantityInCart = existingItem.quantity;
+    }
+  }
+
+  // Block the action if the total intended quantity exceeds available inventory
+  if (currentQuantityInCart + addedQuantity > product.inventoryCount) {
+    res.status(400);
+    throw new Error(`Cannot add to cart. Only ${product.inventoryCount} items left in stock.`);
+  }
+
   if (!cart) {
     // Create new cart if it doesn't exist
     cart = await Cart.create({
@@ -79,6 +94,19 @@ const updateCartItemQuantity = asyncHandler(async (req, res) => {
   if (quantity < 1) {
     res.status(400);
     throw new Error('Quantity must be at least 1. Use remove endpoint to delete items.');
+  }
+
+  // Fetch the product first to check its inventory limit
+  const product = await Product.findOne({ _id: productId, storeId });
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found in this store');
+  }
+
+  // Block the action if requested quantity exceeds available inventory
+  if (quantity > product.inventoryCount) {
+    res.status(400);
+    throw new Error(`Cannot update quantity. Only ${product.inventoryCount} items left in stock.`);
   }
 
   const cart = await Cart.findOne({ customerId: req.user._id, storeId });
