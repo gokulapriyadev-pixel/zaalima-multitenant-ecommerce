@@ -3,7 +3,8 @@ const router = express.Router();
 const { 
   createOrder, 
   getMyOrders, 
-  getStoreOrders 
+  getStoreOrders,
+  getStoreAnalytics
 } = require('../controllers/orderController');
 const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 
@@ -18,6 +19,8 @@ router.get('/my-orders', protect, getMyOrders);
 // Vendor Routes
 // ==========================================
 // Only vendors (or super admins) can view all orders placed on their specific store
+router.get('/analytics/my-store', protect, authorizeRoles('vendor', 'super_admin'), getStoreAnalytics);
+
 router.get('/store/:storeId', protect, authorizeRoles('vendor', 'super_admin'), getStoreOrders);
 
 module.exports = router;

@@ -114,8 +114,44 @@ const getStoreOrders = asyncHandler(async (req, res) => {
   res.json(orders);
 });
 
+/**
+ * @desc    Get dashboard analytics for the logged-in vendor
+ * @route   GET /api/orders/analytics/my-store
+ * @access  Private (Vendor only)
+ */
+const getStoreAnalytics = asyncHandler(async (req, res) => {
+  // 1. Find the vendor's store
+  const store = await Store.findOne({ ownerId: req.user._id });
+  if (!store) {
+    res.status(404);
+    throw new Error('Store not found. Please create a store first.');
+  }
+
+  // 2. Fetch all orders for this store
+  const orders = await Order.find({ storeId: store._id });
+
+  // 3. Calculate Total Revenue and Total Orders
+  const totalOrders = orders.length;
+  const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+  // 4. Fetch Low Inventory Products (e.g., less than 5 items left)
+  const lowInventoryProducts = await Product.find({ 
+    storeId: store._id, 
+    inventoryCount: { $lt: 5 } 
+  }).select('name inventoryCount price');
+
+  res.json({
+    storeName: store.name,
+    totalOrders,
+    totalRevenue: Number(totalRevenue.toFixed(2)), // Format to 2 decimal places
+    lowInventoryItems: lowInventoryProducts.length,
+    lowInventoryProducts // Array of products to display as warnings
+  });
+});
+
 module.exports = {
   createOrder,
   getMyOrders,
-  getStoreOrders
+  getStoreOrders,
+  getStoreAnalytics
 };
