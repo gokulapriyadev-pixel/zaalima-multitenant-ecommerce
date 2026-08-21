@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Store = require('../models/Store');
 const User = require('../models/User');
+const Cart = require('../models/Cart');
 
 /**
  * @desc    Create a new store (Tenant)
@@ -92,6 +93,10 @@ const deleteStore = asyncHandler(async (req, res) => {
   // This ensures past customer orders don't break when looking for the store reference.
   store.isActive = false;
   await store.save();
+
+  // CLEANUP: Instantly delete all active carts belonging to this store
+  // so customers don't try to checkout from a deactivated store.
+  await Cart.deleteMany({ storeId: store._id });
 
   res.json({ message: 'Store successfully deactivated and removed from public view.' });
 });
