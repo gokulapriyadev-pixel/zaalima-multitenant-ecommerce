@@ -79,21 +79,21 @@ function Products() {
         );
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-[#FAFAF7]">
 
       {/* Page Header */}
-      <section className="border-b border-gray-200 bg-white">
+      <section className="border-b border-[#E4E1D9] bg-white">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
 
-          <p className="text-sm font-semibold uppercase tracking-wider text-gray-500">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#B8892B]">
             Marketplace
           </p>
 
-          <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">
+          <h1 className="mt-2 font-serif text-4xl tracking-tight text-[#14201C]">
             All Products
           </h1>
 
-          <p className="mt-4 max-w-2xl text-gray-600">
+          <p className="mt-4 max-w-2xl text-[#6B6F6D]">
             Discover products from different stores and find
             everything you need in one place.
           </p>
@@ -116,8 +116,8 @@ function Products() {
                 onClick={() => setSelectedCategory(category)}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                   selectedCategory === category
-                    ? "bg-black text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
+                    ? "bg-[#0F2C27] text-white"
+                    : "border border-[#E4E1D9] bg-white text-[#14201C] hover:bg-[#FAFAF7]"
                 }`}
               >
                 {category}
@@ -126,8 +126,8 @@ function Products() {
           </div>
 
           {/* Product Count */}
-          <p className="text-sm text-gray-500">
-            <span className="font-semibold text-gray-900">
+          <p className="text-sm text-[#6B6F6D]">
+            <span className="font-semibold text-[#14201C]">
               {filteredProducts.length}
             </span>{" "}
             products
@@ -146,12 +146,12 @@ function Products() {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white py-20 text-center">
-            <h2 className="text-xl font-semibold text-gray-900">
+          <div className="rounded-2xl border border-dashed border-[#E4E1D9] bg-white py-20 text-center">
+            <h2 className="text-xl font-semibold text-[#14201C]">
               No products found
             </h2>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-[#6B6F6D]">
               Try selecting a different category.
             </p>
           </div>

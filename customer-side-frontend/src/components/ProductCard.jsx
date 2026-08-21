@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 function ProductCard({ product }) {
   return (
-    <div className="group overflow-hidden rounded-2xl border border-[#E4E1D9] bg-white transition hover:border-[#B8892B]/40  hover:-translate-y-1 hover:shadow-md">
+    <div className="group overflow-hidden rounded-2xl border border-[#E4E1D9] bg-white transition hover:-translate-y-1 hover:border-[#B8892B]/40 hover:shadow-md">
 
       {/* Product Image */}
       <Link to={`/products/${product.id}`}>
@@ -35,7 +35,7 @@ function ProductCard({ product }) {
         </Link>
 
         <p className="mt-2 text-lg font-bold text-[#14201C]">
-          ₹{product.price}
+          ₹{product.price.toLocaleString("en-IN")}
         </p>
 
         <button
