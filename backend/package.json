@@ -8,7 +8,7 @@
     "dev": "nodemon src/server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ankush Pandey",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

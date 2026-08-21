@@ -3,7 +3,8 @@ const router = express.Router();
 const { 
   registerUser, 
   loginUser, 
-  getMe 
+  getMe,
+  updateProfile
 } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 
@@ -14,5 +15,6 @@ router.post('/login', loginUser);
 // Private/Protected Routes
 // We apply the 'protect' middleware to ensure only authenticated users can access this
 router.get('/me', protect, getMe);
+router.put('/profile', protect, updateProfile);
 
 module.exports = router;

@@ -92,8 +92,53 @@ const getMe = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @desc    Update user profile
+ * @route   PUT /api/auth/profile
+ * @access  Private
+ */
+const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    // If they are trying to change their email, make sure it isn't already taken
+    if (req.body.email && req.body.email !== user.email) {
+      const emailExists = await User.findOne({ email: req.body.email });
+      if (emailExists) {
+        res.status(400);
+        throw new Error('This email is already in use by another account.');
+      }
+    }
+
+    // Update fields if they were provided in the request body
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+
+    // If a new password is provided, assign it. 
+    // The Mongoose pre-save middleware will catch this and hash it automatically!
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
+
+    const updatedUser = await user.save();
+
+    // Return the updated data along with a fresh token
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      token: generateToken(updatedUser._id),
+    });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
 module.exports = {
   registerUser,
   loginUser,
   getMe,
+  updateProfile
 };
