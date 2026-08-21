@@ -9,6 +9,8 @@ import Footer from './components/Footer'
 import StoreLayout from './components/StoreLayout'
 import Stores from './pages/Stores'
 import Products from './pages/Products'
+import ProductDetails from './pages/ProductDetails'
+import Scrolltop from './components/ScrollTop'
 
 function App() {
 
@@ -16,13 +18,14 @@ function App() {
   return (
     <>
       <BrowserRouter>
-
+<Scrolltop />
         <Routes>
 
           <Route element={<StoreLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/stores" element={<Stores />} />
             <Route path="/products" element={<Products />} />
+            <Route path= "/products/:id" element = {<ProductDetails />} />
           </Route>
 
           <Route path="/login" element={<Login />} />
