@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
+const BlacklistToken = require('../models/BlacklistToken');
 const generateToken = require('../utils/generateToken');
 
 /**
@@ -76,6 +77,26 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Logout user & blacklist token
+ * @route   POST /api/auth/logout
+ * @access  Private
+ */
+const logoutUser = asyncHandler(async (req, res) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (token) {
+    // Add the token to the blacklist so it can never be used again
+    await BlacklistToken.create({ token });
+  }
+
+  res.status(200).json({ message: 'Successfully logged out and token invalidated.' });
+});
+
+/**
  * @desc    Get logged in user profile
  * @route   GET /api/auth/me
  * @access  Private
@@ -139,6 +160,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
+  logoutUser,
   getMe,
   updateProfile
 };

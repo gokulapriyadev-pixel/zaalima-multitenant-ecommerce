@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
+const BlacklistToken = require('../models/BlacklistToken');
 
 /**
  * Protects routes by verifying the provided JWT token.
@@ -14,6 +15,13 @@ const protect = asyncHandler(async (req, res, next) => {
     try {
       // Extract the token from the header (Format: "Bearer <token>")
       token = req.headers.authorization.split(' ')[1];
+
+      // SECURITY CHECK: Is this token in the blacklist?
+      const isBlacklisted = await BlacklistToken.findOne({ token });
+      if (isBlacklisted) {
+        res.status(401);
+        throw new Error('Not authorized, token has been logged out and invalidated');
+      }
 
       // Verify the token using our secret key
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
