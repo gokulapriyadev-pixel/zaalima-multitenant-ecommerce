@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
 const Store = require('../models/Store');
+const Order = require('../models/Order');
 
 /**
  * @desc    Get the logged-in vendor's Store ID
@@ -276,6 +277,67 @@ const updateProduct = asyncHandler(async (req, res) => {
   res.json(updatedProduct);
 });
 
+// ==========================================
+// REVIEWS CONTROLLER 
+// ==========================================
+
+/**
+ * @desc    Create new review for a product
+ * @route   POST /api/products/:productId/reviews
+ * @access  Private (Logged-in users)
+ */
+const createProductReview = asyncHandler(async (req, res) => {
+    const { rating, comment } = req.body;
+    const productId = req.params.productId;
+
+    // 1. Find the product
+    const product = await Product.findById(productId);
+    if (!product) {
+        res.status(404);
+        throw new Error('Product not found');
+    }
+
+    // 2. Verify the user has actually purchased this product before!
+    // We check if an order exists for this customer that includes the product, 
+    // and ensuring the order hasn't been cancelled.
+    const hasPurchased = await Order.findOne({
+        customerId: req.user._id,
+        'products.productId': productId,
+        orderStatus: { $ne: 'cancelled' } 
+    });
+
+    if (!hasPurchased) {
+        res.status(400);
+        throw new Error('You can only review products you have purchased.');
+    }
+
+    // 3. Check if they already reviewed this exact product
+    const alreadyReviewed = product.reviews.find(
+        (r) => r.user.toString() === req.user._id.toString()
+    );
+
+    if (alreadyReviewed) {
+        res.status(400);
+        throw new Error('You have already reviewed this product.');
+    }
+
+    // 4. Create the review object
+    const review = {
+        name: req.user.name,
+        rating: Number(rating),
+        comment,
+        user: req.user._id,
+    };
+
+    // 5. Add it to the product and recalculate the averages
+    product.reviews.push(review);
+    product.numReviews = product.reviews.length;
+    product.rating = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length;
+
+    await product.save();
+    res.status(201).json({ message: 'Review successfully added' });
+});
+
 module.exports = {
   createCategory,
   getStoreCategories,
@@ -284,5 +346,6 @@ module.exports = {
   createProduct,
   getStoreProducts,
   deleteProduct,
-  updateProduct
+  updateProduct,
+  createProductReview
 };
