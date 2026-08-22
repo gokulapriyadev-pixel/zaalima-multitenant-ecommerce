@@ -409,25 +409,25 @@ const Home = () => {
 
 
       {/* ================= CTA ================= */}
-      <section className="bg-[#0F2C27]">
+      <section className="bg-[#EDE3CF]">
         <div className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6">
-
-          <h2 className="font-serif text-3xl tracking-tight text-white sm:text-4xl">
+ 
+          <h2 className="font-serif text-3xl tracking-tight text-[#14201C] sm:text-4xl">
             Ready to start shopping?
           </h2>
-
-          <p className="mx-auto mt-4 max-w-xl text-[#C7D3CE]">
+ 
+          <p className="mx-auto mt-4 max-w-xl text-[#5C574E]">
             Explore stores and discover products from vendors
             across the platform.
           </p>
-
+ 
           <Link
             to="/products"
             className="mt-8 inline-block rounded-lg bg-[#B8892B] px-6 py-3 text-sm font-semibold text-[#14201C] transition hover:bg-[#C79A38]"
           >
             Start Shopping
           </Link>
-
+ 
         </div>
       </section>
 
