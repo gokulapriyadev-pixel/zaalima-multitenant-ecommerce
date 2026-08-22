@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
 const Store = require('../models/Store');
+const { uploadImage } = require('../services/cloudinaryService');
 
 const createProduct = asyncHandler(async (req, res) => {
   const {
@@ -49,6 +50,26 @@ const createProduct = asyncHandler(async (req, res) => {
   });
 });
 
+const uploadProductImage = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    res.status(400);
+    throw new Error('Image file is required');
+  }
+
+  const result = await uploadImage(
+    req.file.buffer,
+    'zaalima/products'
+  );
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Product image uploaded successfully',
+    imageUrl: result.secure_url,
+    publicId: result.public_id
+  });
+});
+
 module.exports = {
-  createProduct
+  createProduct,
+  uploadProductImage
 };
