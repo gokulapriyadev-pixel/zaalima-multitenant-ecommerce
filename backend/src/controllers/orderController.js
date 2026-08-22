@@ -169,14 +169,29 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   const order = await Order.findById(orderId).populate('storeId');
 
   if (!order) {
-      res.status(404);
-      throw new Error('Order not found');
+    res.status(404);
+    throw new Error('Order not found');
   }
 
   // 3. Security Check: Does the logged-in vendor actually own this store?
   if (order.storeId.ownerId.toString() !== req.user._id.toString()) {
     res.status(403);
     throw new Error('You do not have permission to update this order.');
+  }
+
+  // Prevent modifying an already cancelled order
+  if (order.orderStatus === 'cancelled' && orderStatus !== 'cancelled') {
+    res.status(400);
+    throw new Error('This order has already been cancelled and cannot be reopened.');
+  }
+
+  // Auto-Restock Inventory if status is changing to cancelled
+  if (orderStatus === 'cancelled' && order.orderStatus !== 'cancelled') {
+    for (const item of order.products) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { inventoryCount: item.quantity } // Add the quantity back!
+      });
+    }
   }
 
   // 4. Update and save
