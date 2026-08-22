@@ -1,12 +1,21 @@
 const mongoose = require('mongoose');
 
 const storeSchema = new mongoose.Schema({
-    name : String,
-    ownerId : {
+
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+
+    ownerId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'user'
+        ref: 'user',
+        required: true,
+        index: true
     }
-},{timestamps:true});
+
+}, { timestamps: true });
 
 const storeModel = mongoose.model("store", storeSchema);
 
