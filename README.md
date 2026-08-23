@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Zaalima Multitenant E-Commerce
 
 A multi-tenant e-commerce application with a Node.js/Express backend, MongoDB database, Razorpay payments, and transactional email support.
@@ -46,3 +47,6 @@ RAZORPAY_WEBHOOK_SECRET=
 Do not commit the `.env` file or expose real credentials.
 
 Use `.env.example` as the template for the required environment variables.
+=======
+# zaalima-multitenant-ecommerce
+>>>>>>> origin/main
