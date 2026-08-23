@@ -1,10 +1,18 @@
 import { Link, useParams } from "react-router-dom";
 import { useState } from "react";
 
+import { useDispatch } from "react-redux"; 
+import { addToCart } from "../redux/cartSlice";
+
+
 function ProductDetails() {
   const { id } = useParams();
 
   const [quantity, setQuantity] = useState(1);
+
+  const dispatch = useDispatch();
+
+ 
 
   // Temporary product data
   // Later this will come from the backend API
@@ -96,6 +104,16 @@ function ProductDetails() {
   };
 
   const handleAddToCart = () => {
+
+   dispatch(addToCart({ 
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    image: product.image,
+    quantity,
+    }));
+
+    console.log(totalItem)
     console.log("Add to cart:", {
       productId: product.id,
       quantity,
@@ -213,6 +231,9 @@ function ProductDetails() {
 
                 <p className="mb-3 text-sm font-medium text-[#14201C]">
                   Quantity
+                </p>
+                <p className="mb-3 text-sm font-medium text-[#14201C]">
+                  {`Total no Product : ${totalItem}`}
                 </p>
 
                 <div className="flex w-fit items-center overflow-hidden rounded-lg border border-[#E4E1D9]">

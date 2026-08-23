@@ -15,6 +15,16 @@ const CATEGORIES = [
   { value: "Books", label: "Books" },
 ];
 
+// for different category different colors
+const CATEGORY_COLORS = {
+  Fashion: "#C97B63",
+  Electronics: "#5B7A8C",
+  Home: "#7A8F6E",
+  Beauty: "#A6708C",
+  Sports: "#B5714A",
+  Books: "#7A6A8C",
+};
+
  const [selectedCategory, setSelectedCategory] = useState("all");
 
    const stores = [
@@ -143,7 +153,13 @@ const CATEGORIES = [
               {/* Store Information */}
               <div className="p-6">
  
-                <span className="inline-block rounded-full bg-[#0F2C27]/5 px-3 py-1 text-xs font-medium uppercase tracking-wide text-[#0F2C27]">
+                <span className="inline-block rounded-full bg-[#0F2C27]/5 px-3 py-1 text-xs font-medium uppercase tracking-wide text-[#0F2C27]"
+                style={{
+                  backgroundColor: `${CATEGORY_COLORS[store.category]}1F`,
+                   color: CATEGORY_COLORS[store.category],
+
+                }}
+                >
                   {store.category}
                 </span>
  
