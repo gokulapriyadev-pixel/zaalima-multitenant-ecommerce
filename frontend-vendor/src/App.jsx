@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Products from "./pages/Products";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           }
         />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/products" element={<Products />} />
       </Routes>
     </BrowserRouter>
   );
