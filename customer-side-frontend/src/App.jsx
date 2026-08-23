@@ -11,6 +11,7 @@ import Stores from './pages/Stores'
 import Products from './pages/Products'
 import ProductDetails from './pages/ProductDetails'
 import Scrolltop from './components/ScrollTop'
+import Cart from './pages/Cart'
 
 function App() {
 
@@ -26,6 +27,7 @@ function App() {
             <Route path="/stores" element={<Stores />} />
             <Route path="/products" element={<Products />} />
             <Route path= "/products/:id" element = {<ProductDetails />} />
+            <Route path= "/cart" element = {<Cart />} />
           </Route>
 
           <Route path="/login" element={<Login />} />

@@ -105,15 +105,16 @@ function ProductDetails() {
 
   const handleAddToCart = () => {
 
-   dispatch(addToCart({ 
-    id: product.id,
-    name: product.name,
-    price: product.price,
-    image: product.image,
-    quantity,
-    }));
+dispatch(addToCart({ 
+  id: product.id,
+  name: product.name,
+  price: product.price,
+  image: product.image,
+  stock: product.stock,
+  quantity,
+}));
 
-    console.log(totalItem)
+    
     console.log("Add to cart:", {
       productId: product.id,
       quantity,
@@ -232,9 +233,7 @@ function ProductDetails() {
                 <p className="mb-3 text-sm font-medium text-[#14201C]">
                   Quantity
                 </p>
-                <p className="mb-3 text-sm font-medium text-[#14201C]">
-                  {`Total no Product : ${totalItem}`}
-                </p>
+                
 
                 <div className="flex w-fit items-center overflow-hidden rounded-lg border border-[#E4E1D9]">
 
