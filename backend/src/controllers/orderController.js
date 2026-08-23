@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Store = require('../models/Store');
 const Cart = require('../models/Cart');
+const Coupon = require('../models/Coupon');
 
 /**
  * @desc    Create a new order (Checkout from Cart)
@@ -10,7 +11,7 @@ const Cart = require('../models/Cart');
  * @access  Private (Logged in users)
  */
 const createOrder = asyncHandler(async (req, res) => {
-  const { storeId, shippingAddress } = req.body;
+  const { storeId, shippingAddress, couponCode } = req.body;
 
   // 1. Verify the store exists
   const store = await Store.findById(storeId);
@@ -53,6 +54,48 @@ const createOrder = asyncHandler(async (req, res) => {
       quantity: item.quantity,
       priceAtPurchase: product.price // Crucial: Taking a snapshot of the current price
     });
+  }
+
+  // ==========================================
+  // Coupon Calculation Logic
+  // ==========================================
+  let discountAmount = 0;
+  if (couponCode) {
+    const coupon = await Coupon.findOne({ 
+      storeId, 
+      code: couponCode.toUpperCase(), 
+      isActive: true 
+    });
+
+    if (!coupon) {
+      res.status(400);
+      throw new Error('Invalid coupon code');
+    }
+
+    const now = new Date();
+    if (new Date(coupon.expiryDate) < now) {
+      res.status(400);
+      throw new Error('Coupon has expired');
+    }
+
+    if (coupon.maxUses > 0 && coupon.timesUsed >= coupon.maxUses) {
+      res.status(400);
+      throw new Error('Coupon usage limit reached');
+    }
+
+    // Calculate discount based on type
+    if (coupon.discountType === 'percentage') {
+      discountAmount = totalAmount * (coupon.discountValue / 100);
+    } else if (coupon.discountType === 'fixed') {
+      discountAmount = coupon.discountValue;
+    }
+
+    // Apply discount and ensure total doesn't go below 0
+    totalAmount = Math.max(0, totalAmount - discountAmount);
+
+    // Increment the times the coupon has been used
+    coupon.timesUsed += 1;
+    await coupon.save();
   }
 
   // 4. Create the order
