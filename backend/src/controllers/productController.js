@@ -170,7 +170,7 @@ const getStoreProducts = asyncHandler(async (req, res) => {
   const { storeId } = req.params;
     
   // 1. Grab query parameters (defaults: page 1, 10 items per page)
-  const { keyword, categoryId, pageNumber, pageSize } = req.query;
+  const { keyword, categoryId, pageNumber, pageSize, minPrice, maxPrice, sort } = req.query;
   const page = Number(pageNumber) || 1;
   const limit = Number(pageSize) || 10;
   const skip = (page - 1) * limit;
@@ -181,8 +181,8 @@ const getStoreProducts = asyncHandler(async (req, res) => {
   // 3. Search: If keyword exists, search product name OR description (case-insensitive)
   if (keyword) {
     query.$or = [
-      { name: { $regex: keyword, $options: 'i' } },
-      { description: { $regex: keyword, $options: 'i' } }
+    { name: { $regex: keyword, $options: 'i' } },
+    { description: { $regex: keyword, $options: 'i' } }
     ];
   }
 
@@ -191,13 +191,27 @@ const getStoreProducts = asyncHandler(async (req, res) => {
     query.categoryId = categoryId;
   }
 
+  // Price Filtering Logic
+  if (minPrice || maxPrice) {
+    query.price = {};
+    if (minPrice) query.price.$gte = Number(minPrice);
+    if (maxPrice) query.price.$lte = Number(maxPrice);
+  }
+
+  // Sorting Logic
+  let sortOption = { createdAt: -1 }; // Default: Newest first
+  if (sort === 'price_asc') sortOption = { price: 1 };
+  if (sort === 'price_desc') sortOption = { price: -1 };
+  if (sort === 'top_rated') sortOption = { rating: -1 };
+  if (sort === 'newest') sortOption = { createdAt: -1 };
+
   // 5. Count total matching documents (before applying pagination limit)
   const count = await Product.countDocuments(query);
 
   // 6. Fetch paginated results
   const products = await Product.find(query)
     .populate('categoryId', 'name slug')
-    .sort({ createdAt: -1 }) // Sort by newest first
+    .sort(sortOption) // Dynamic sort option 
     .limit(limit)
     .skip(skip);
 
