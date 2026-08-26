@@ -34,8 +34,8 @@ const orderSchema = new mongoose.Schema({
     type: Number, 
     required: true 
   },
-  paymentIntentId: { 
-    type: String 
+  razorpayOrderId: { 
+  type: String 
   },
   paymentStatus: {
     type: String,

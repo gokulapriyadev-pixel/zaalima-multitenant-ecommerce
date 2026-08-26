@@ -3,6 +3,7 @@ const Category = require('../models/Category');
 const Product = require('../models/Product');
 const Store = require('../models/Store');
 const Order = require('../models/Order');
+const { uploadImage } = require('../services/cloudinaryService');
 
 /**
  * @desc    Get the logged-in vendor's Store ID
@@ -154,7 +155,8 @@ const createProduct = asyncHandler(async (req, res) => {
     slug,
     description,
     price,
-    inventoryCount,
+    images: images || [],
+    inventoryCount: inventoryCount || 0,
     isPublished: isPublished !== undefined ? isPublished : false
   });
 
@@ -301,55 +303,75 @@ const updateProduct = asyncHandler(async (req, res) => {
  * @access  Private (Logged-in users)
  */
 const createProductReview = asyncHandler(async (req, res) => {
-    const { rating, comment } = req.body;
-    const productId = req.params.productId;
+  const { rating, comment } = req.body;
+  const productId = req.params.productId;
 
-    // 1. Find the product
-    const product = await Product.findById(productId);
-    if (!product) {
-        res.status(404);
-        throw new Error('Product not found');
-    }
+  // 1. Find the product
+  const product = await Product.findById(productId);
+  if (!product) {
+      res.status(404);
+      throw new Error('Product not found');
+  }
 
-    // 2. Verify the user has actually purchased this product before!
-    // We check if an order exists for this customer that includes the product, 
-    // and ensuring the order hasn't been cancelled.
-    const hasPurchased = await Order.findOne({
-        customerId: req.user._id,
-        'products.productId': productId,
-        orderStatus: { $ne: 'cancelled' } 
-    });
+  // 2. Verify the user has actually purchased this product before!
+  // We check if an order exists for this customer that includes the product, 
+  // and ensuring the order hasn't been cancelled.
+  const hasPurchased = await Order.findOne({
+      customerId: req.user._id,
+      'products.productId': productId,
+      orderStatus: { $ne: 'cancelled' } 
+  });
 
-    if (!hasPurchased) {
-        res.status(400);
-        throw new Error('You can only review products you have purchased.');
-    }
+  if (!hasPurchased) {
+      res.status(400);
+      throw new Error('You can only review products you have purchased.');
+  }
 
-    // 3. Check if they already reviewed this exact product
-    const alreadyReviewed = product.reviews.find(
-        (r) => r.user.toString() === req.user._id.toString()
-    );
+  // 3. Check if they already reviewed this exact product
+  const alreadyReviewed = product.reviews.find(
+      (r) => r.user.toString() === req.user._id.toString()
+  );
 
-    if (alreadyReviewed) {
-        res.status(400);
-        throw new Error('You have already reviewed this product.');
-    }
+  if (alreadyReviewed) {
+    res.status(400);
+    throw new Error('You have already reviewed this product.');
+  }
 
-    // 4. Create the review object
-    const review = {
-        name: req.user.name,
-        rating: Number(rating),
-        comment,
-        user: req.user._id,
-    };
+  // 4. Create the review object
+  const review = {
+    name: req.user.name,
+    rating: Number(rating),
+    comment,
+    user: req.user._id,
+  };
 
-    // 5. Add it to the product and recalculate the averages
-    product.reviews.push(review);
-    product.numReviews = product.reviews.length;
-    product.rating = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length;
+  // 5. Add it to the product and recalculate the averages
+  product.reviews.push(review);
+  product.numReviews = product.reviews.length;
+  product.rating = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length;
 
-    await product.save();
-    res.status(201).json({ message: 'Review successfully added' });
+  await product.save();
+  res.status(201).json({ message: 'Review successfully added' });
+});
+
+// Upload an image and attach it to a specific product
+const uploadProductImage = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    res.status(400);
+    throw new Error('Image file is required');
+  }
+
+  const result = await uploadImage(
+    req.file.buffer,
+    'zaalima/products'
+  );
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Product image uploaded successfully',
+    imageUrl: result.secure_url,
+    publicId: result.public_id
+  });
 });
 
 module.exports = {
@@ -361,5 +383,6 @@ module.exports = {
   getStoreProducts,
   deleteProduct,
   updateProduct,
-  createProductReview
+  createProductReview,
+  uploadProductImage
 };

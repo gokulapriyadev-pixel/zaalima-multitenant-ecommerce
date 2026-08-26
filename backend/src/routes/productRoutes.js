@@ -9,7 +9,8 @@ const {
     getStoreProducts,
     deleteProduct,
     updateProduct,
-    createProductReview
+    createProductReview,
+    uploadProductImage
 } = require('../controllers/productController');
 const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 
@@ -24,6 +25,7 @@ router.put('/categories/:categoryId', protect, authorizeRoles('vendor', 'super_a
 router.post('/', protect, authorizeRoles('vendor', 'super_admin'), createProduct);
 router.delete('/:productId', protect, authorizeRoles('vendor', 'super_admin'), deleteProduct);
 router.put('/:productId', protect, authorizeRoles('vendor', 'super_admin'), updateProduct);
+router.post('/upload-image', protect, upload.single('image'), uploadProductImage);
 
 // ==========================================
 // Protected Customer Routes
