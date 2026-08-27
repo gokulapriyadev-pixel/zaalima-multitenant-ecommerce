@@ -9,5 +9,5 @@ exports.createStore = async (req , res) => {
         name,
         ownerId : req.user.id
     });
-    res.json(store);
+    res.status(201).json(store);
 }
