@@ -50,6 +50,7 @@ app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
+app.use('/api/wishlist', require('./routes/wishlistRoutes'));
 
 // ==========================================
 // Global Error Handler (Fallback)
