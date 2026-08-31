@@ -5,10 +5,11 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "seed": "node seeder.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ankush Pandey",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

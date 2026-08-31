@@ -2,78 +2,232 @@ const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Store = require('../models/Store');
+const Cart = require('../models/Cart');
+const Coupon = require('../models/Coupon');
 
 
 // ==========================================
 // CREATE ORDER
 // POST /api/orders
 // Access: Private
+//
+// Supports:
+// 1. Direct checkout using products[]
+// 2. Cart checkout when products[] is omitted
 // ==========================================
 const createOrder = asyncHandler(async (req, res) => {
   const {
     storeId,
     products,
-    shippingAddress
+    shippingAddress,
+    couponCode
   } = req.body;
 
-  if (!storeId || !products || !Array.isArray(products) || products.length === 0) {
+  if (!storeId) {
     res.status(400);
-    throw new Error('Store and products are required');
+    throw new Error('Store ID is required');
   }
 
-  const productIds = products.map(item => item.productId);
+  // Verify store exists
+  const store = await Store.findById(storeId);
 
-  const dbProducts = await Product.find({
-    _id: { $in: productIds },
-    storeId
-  });
-
-  if (dbProducts.length !== products.length) {
-    res.status(400);
-    throw new Error('One or more products are invalid');
+  if (!store) {
+    res.status(404);
+    throw new Error('Store not found');
   }
 
-  let totalAmount = 0;
-  const orderProducts = [];
+  let checkoutProducts = [];
+  let cart = null;
 
-  for (const item of products) {
-    const product = dbProducts.find(
-      p => p._id.toString() === item.productId
+  // ==========================================
+  // OPTION 1: DIRECT PRODUCT CHECKOUT
+  // ==========================================
+  if (products && Array.isArray(products) && products.length > 0) {
+
+    const productIds = products.map(item => item.productId);
+
+    const dbProducts = await Product.find({
+      _id: { $in: productIds },
+      storeId
+    });
+
+    if (dbProducts.length !== products.length) {
+      res.status(400);
+      throw new Error('One or more products are invalid');
+    }
+
+    for (const item of products) {
+      const product = dbProducts.find(
+        p => p._id.toString() === item.productId
+      );
+
+      if (!product) {
+        res.status(400);
+        throw new Error('Product not found');
+      }
+
+      if (!item.quantity || item.quantity < 1) {
+        res.status(400);
+        throw new Error('Quantity must be at least 1');
+      }
+
+      if (product.inventoryCount < item.quantity) {
+        res.status(400);
+        throw new Error(
+          `Insufficient stock for ${product.name}`
+        );
+      }
+
+      checkoutProducts.push({
+        productId: product._id,
+        quantity: item.quantity,
+        priceAtPurchase: product.price
+      });
+    }
+
+  } else {
+
+    // ==========================================
+    // OPTION 2: CART CHECKOUT
+    // ==========================================
+
+    cart = await Cart.findOne({
+      customerId: req.user._id,
+      storeId
+    });
+
+    if (!cart || cart.items.length === 0) {
+      res.status(400);
+      throw new Error('Your cart is empty for this store.');
+    }
+
+    for (const item of cart.items) {
+
+      const product = await Product.findOne({
+        _id: item.productId,
+        storeId
+      });
+
+      if (!product) {
+        res.status(404);
+        throw new Error(
+          `Product not found in this store: ${item.productId}`
+        );
+      }
+
+      if (product.inventoryCount < item.quantity) {
+        res.status(400);
+        throw new Error(
+          `Insufficient inventory for product: ${product.name}`
+        );
+      }
+
+      checkoutProducts.push({
+        productId: product._id,
+        quantity: item.quantity,
+        priceAtPurchase: product.price
+      });
+    }
+  }
+
+  // ==========================================
+  // CALCULATE TOTAL
+  // ==========================================
+
+  let totalAmount = checkoutProducts.reduce(
+    (total, item) =>
+      total + item.priceAtPurchase * item.quantity,
+    0
+  );
+
+  // ==========================================
+  // COUPON
+  // ==========================================
+
+  let discountAmount = 0;
+
+  if (couponCode) {
+
+    const coupon = await Coupon.findOne({
+      storeId,
+      code: couponCode.toUpperCase(),
+      isActive: true
+    });
+
+    if (!coupon) {
+      res.status(400);
+      throw new Error('Invalid coupon code');
+    }
+
+    if (
+      coupon.expiryDate &&
+      new Date(coupon.expiryDate) < new Date()
+    ) {
+      res.status(400);
+      throw new Error('Coupon has expired');
+    }
+
+    if (
+      coupon.maxUses > 0 &&
+      coupon.timesUsed >= coupon.maxUses
+    ) {
+      res.status(400);
+      throw new Error('Coupon usage limit reached');
+    }
+
+    if (coupon.discountType === 'percentage') {
+      discountAmount =
+        totalAmount * (coupon.discountValue / 100);
+    } else if (coupon.discountType === 'fixed') {
+      discountAmount = coupon.discountValue;
+    }
+
+    totalAmount = Math.max(
+      0,
+      totalAmount - discountAmount
     );
 
-    if (!product) {
-      res.status(400);
-      throw new Error('Product not found');
-    }
-
-    if (item.quantity < 1) {
-      res.status(400);
-      throw new Error('Quantity must be at least 1');
-    }
-
-    if (product.inventoryCount < item.quantity) {
-      res.status(400);
-      throw new Error(`Insufficient stock for ${product.name}`);
-    }
-
-    totalAmount += product.price * item.quantity;
-
-    orderProducts.push({
-      productId: product._id,
-      quantity: item.quantity,
-      priceAtPurchase: product.price
-    });
+    coupon.timesUsed += 1;
+    await coupon.save();
   }
+
+  // ==========================================
+  // CREATE ORDER
+  // ==========================================
 
   const order = await Order.create({
     storeId,
     customerId: req.user._id,
-    products: orderProducts,
+    products: checkoutProducts,
     totalAmount,
     paymentStatus: 'pending',
     orderStatus: 'processing',
     shippingAddress
   });
+
+  // ==========================================
+  // DEDUCT INVENTORY
+  // ==========================================
+
+  for (const item of checkoutProducts) {
+    await Product.findByIdAndUpdate(
+      item.productId,
+      {
+        $inc: {
+          inventoryCount: -item.quantity
+        }
+      }
+    );
+  }
+
+  // ==========================================
+  // EMPTY CART
+  // ==========================================
+
+  if (cart) {
+    cart.items = [];
+    await cart.save();
+  }
 
   res.status(201).json({
     status: 'success',
@@ -94,7 +248,10 @@ const getMyOrders = asyncHandler(async (req, res) => {
     customerId: req.user._id
   })
     .populate('storeId', 'name slug')
-    .populate('products.productId', 'name price images')
+    .populate(
+      'products.productId',
+      'name price images'
+    )
     .sort({ createdAt: -1 });
 
   res.status(200).json({
@@ -117,7 +274,10 @@ const getOrderById = asyncHandler(async (req, res) => {
     customerId: req.user._id
   })
     .populate('storeId', 'name slug')
-    .populate('products.productId', 'name price images');
+    .populate(
+      'products.productId',
+      'name price images'
+    );
 
   if (!order) {
     res.status(404);
@@ -132,9 +292,91 @@ const getOrderById = asyncHandler(async (req, res) => {
 
 
 // ==========================================
+// GET STORE ORDERS
+// GET /api/orders/store/:storeId
+// Access: Vendor / Super Admin
+// ==========================================
+const getStoreOrders = asyncHandler(async (req, res) => {
+
+  const store = await Store.findOne({
+    _id: req.params.storeId,
+    ownerId: req.user._id
+  });
+
+  if (!store) {
+    res.status(403);
+    throw new Error(
+      'You do not have permission to view orders for this store.'
+    );
+  }
+
+  const orders = await Order.find({
+    storeId: req.params.storeId
+  })
+    .populate('customerId', 'name email')
+    .populate(
+      'products.productId',
+      'name price images'
+    )
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    status: 'success',
+    count: orders.length,
+    orders
+  });
+});
+
+
+// ==========================================
+// STORE ANALYTICS
+// GET /api/orders/analytics/my-store
+// Access: Vendor / Super Admin
+// ==========================================
+const getStoreAnalytics = asyncHandler(async (req, res) => {
+
+  const store = await Store.findOne({
+    ownerId: req.user._id
+  });
+
+  if (!store) {
+    res.status(404);
+    throw new Error(
+      'Store not found. Please create a store first.'
+    );
+  }
+
+  const orders = await Order.find({
+    storeId: store._id
+  });
+
+  const totalOrders = orders.length;
+
+  const totalRevenue = orders.reduce(
+    (sum, order) => sum + order.totalAmount,
+    0
+  );
+
+  const lowInventoryProducts = await Product.find({
+    storeId: store._id,
+    inventoryCount: { $lt: 5 }
+  }).select('name inventoryCount price');
+
+  res.status(200).json({
+    status: 'success',
+    storeName: store.name,
+    totalOrders,
+    totalRevenue: Number(totalRevenue.toFixed(2)),
+    lowInventoryItems: lowInventoryProducts.length,
+    lowInventoryProducts
+  });
+});
+
+
+// ==========================================
 // UPDATE ORDER STATUS
 // PUT /api/orders/:id/status
-// Access: Store Owner
+// Access: Vendor / Super Admin
 // ==========================================
 const updateOrderStatus = asyncHandler(async (req, res) => {
 
@@ -147,35 +389,67 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     'cancelled'
   ];
 
-  if (!orderStatus || !allowedStatuses.includes(orderStatus)) {
+  if (
+    !orderStatus ||
+    !allowedStatuses.includes(orderStatus)
+  ) {
     res.status(400);
     throw new Error(
       'Invalid order status. Allowed values: processing, shipped, delivered, cancelled'
     );
   }
 
-  const order = await Order.findById(req.params.id);
+  const order = await Order.findById(
+    req.params.id
+  ).populate('storeId');
 
   if (!order) {
     res.status(404);
     throw new Error('Order not found');
   }
 
-  // Verify that the logged-in user owns the store
-  const store = await Store.findOne({
-    _id: order.storeId,
-    ownerId: req.user._id
-  });
-
-  if (!store) {
+  // Verify store ownership
+  if (
+    order.storeId.ownerId.toString() !==
+    req.user._id.toString()
+  ) {
     res.status(403);
-    throw new Error('You are not authorized to update this order');
+    throw new Error(
+      'You do not have permission to update this order.'
+    );
   }
 
-  // Prevent changing a cancelled order
-  if (order.orderStatus === 'cancelled') {
+  // Prevent reopening cancelled orders
+  if (
+    order.orderStatus === 'cancelled' &&
+    orderStatus !== 'cancelled'
+  ) {
     res.status(400);
-    throw new Error('Cancelled orders cannot be updated');
+    throw new Error(
+      'This order has already been cancelled and cannot be reopened.'
+    );
+  }
+
+  // ==========================================
+  // RESTOCK WHEN ORDER IS CANCELLED
+  // ==========================================
+
+  if (
+    orderStatus === 'cancelled' &&
+    order.orderStatus !== 'cancelled'
+  ) {
+
+    for (const item of order.products) {
+
+      await Product.findByIdAndUpdate(
+        item.productId,
+        {
+          $inc: {
+            inventoryCount: item.quantity
+          }
+        }
+      );
+    }
   }
 
   order.orderStatus = orderStatus;
@@ -194,5 +468,7 @@ module.exports = {
   createOrder,
   getMyOrders,
   getOrderById,
+  getStoreOrders,
+  getStoreAnalytics,
   updateOrderStatus
 };

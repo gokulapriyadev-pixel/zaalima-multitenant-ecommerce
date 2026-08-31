@@ -5,21 +5,55 @@ const {
   createOrder,
   getMyOrders,
   getOrderById,
+  getStoreOrders,
+  getStoreAnalytics,
   updateOrderStatus
 } = require('../controllers/orderController');
 
-const { protect } = require('../middlewares/authMiddleware');
+const {
+  protect,
+  authorizeRoles
+} = require('../middlewares/authMiddleware');
 
-// Get customer's orders
-router.get('/', protect, getMyOrders);
+// ==========================================
+// CUSTOMER ROUTES
+// ==========================================
 
 // Create order
 router.post('/', protect, createOrder);
 
-// Get one order
+// Get customer's orders
+router.get('/', protect, getMyOrders);
+
+// Get one customer's order
 router.get('/:id', protect, getOrderById);
 
+// ==========================================
+// VENDOR / ADMIN ROUTES
+// ==========================================
+
+// Get analytics for the logged-in vendor's store
+router.get(
+  '/analytics/my-store',
+  protect,
+  authorizeRoles('vendor', 'super_admin'),
+  getStoreAnalytics
+);
+
+// Get orders for a specific store
+router.get(
+  '/store/:storeId',
+  protect,
+  authorizeRoles('vendor', 'super_admin'),
+  getStoreOrders
+);
+
 // Update order status
-router.put('/:id/status', protect, updateOrderStatus);
+router.put(
+  '/:id/status',
+  protect,
+  authorizeRoles('vendor', 'super_admin'),
+  updateOrderStatus
+);
 
 module.exports = router;
