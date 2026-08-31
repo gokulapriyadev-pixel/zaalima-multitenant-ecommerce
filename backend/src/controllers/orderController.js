@@ -1,7 +1,14 @@
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const Store = require('../models/Store');
 
+
+// ==========================================
+// CREATE ORDER
+// POST /api/orders
+// Access: Private
+// ==========================================
 const createOrder = asyncHandler(async (req, res) => {
   const {
     storeId,
@@ -14,7 +21,6 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error('Store and products are required');
   }
 
-  // Get products from database
   const productIds = products.map(item => item.productId);
 
   const dbProducts = await Product.find({
@@ -76,6 +82,117 @@ const createOrder = asyncHandler(async (req, res) => {
   });
 });
 
+
+// ==========================================
+// GET MY ORDERS
+// GET /api/orders
+// Access: Private
+// ==========================================
+const getMyOrders = asyncHandler(async (req, res) => {
+
+  const orders = await Order.find({
+    customerId: req.user._id
+  })
+    .populate('storeId', 'name slug')
+    .populate('products.productId', 'name price images')
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    status: 'success',
+    count: orders.length,
+    orders
+  });
+});
+
+
+// ==========================================
+// GET ORDER BY ID
+// GET /api/orders/:id
+// Access: Private
+// ==========================================
+const getOrderById = asyncHandler(async (req, res) => {
+
+  const order = await Order.findOne({
+    _id: req.params.id,
+    customerId: req.user._id
+  })
+    .populate('storeId', 'name slug')
+    .populate('products.productId', 'name price images');
+
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  res.status(200).json({
+    status: 'success',
+    order
+  });
+});
+
+
+// ==========================================
+// UPDATE ORDER STATUS
+// PUT /api/orders/:id/status
+// Access: Store Owner
+// ==========================================
+const updateOrderStatus = asyncHandler(async (req, res) => {
+
+  const { orderStatus } = req.body;
+
+  const allowedStatuses = [
+    'processing',
+    'shipped',
+    'delivered',
+    'cancelled'
+  ];
+
+  if (!orderStatus || !allowedStatuses.includes(orderStatus)) {
+    res.status(400);
+    throw new Error(
+      'Invalid order status. Allowed values: processing, shipped, delivered, cancelled'
+    );
+  }
+
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  // Verify that the logged-in user owns the store
+  const store = await Store.findOne({
+    _id: order.storeId,
+    ownerId: req.user._id
+  });
+
+  if (!store) {
+    res.status(403);
+    throw new Error('You are not authorized to update this order');
+  }
+
+  // Prevent changing a cancelled order
+  if (order.orderStatus === 'cancelled') {
+    res.status(400);
+    throw new Error('Cancelled orders cannot be updated');
+  }
+
+  order.orderStatus = orderStatus;
+
+  const updatedOrder = await order.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Order status updated successfully',
+    order: updatedOrder
+  });
+});
+
+
 module.exports = {
-  createOrder
+  createOrder,
+  getMyOrders,
+  getOrderById,
+  updateOrderStatus
 };
