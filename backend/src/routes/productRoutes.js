@@ -2,10 +2,6 @@ const express = require('express');
 const router = express.Router();
 
 const {
-  createCategory,
-  getStoreCategories,
-  deleteCategory,
-  updateCategory,
   createProduct,
   getMyProducts,
   getStoreProducts,
@@ -22,41 +18,6 @@ const {
 } = require('../middlewares/authMiddleware');
 
 const upload = require('../middlewares/uploadMiddleware');
-
-// ==========================================
-// CATEGORY ROUTES
-// ==========================================
-
-// Create category
-router.post(
-  '/categories',
-  protect,
-  authorizeRoles('vendor', 'super_admin'),
-  createCategory
-);
-
-// Get store categories
-router.get(
-  '/categories/:storeId',
-  getStoreCategories
-);
-
-// Update category
-router.put(
-  '/categories/:categoryId',
-  protect,
-  authorizeRoles('vendor', 'super_admin'),
-  updateCategory
-);
-
-// Delete category
-router.delete(
-  '/categories/:categoryId',
-  protect,
-  authorizeRoles('vendor', 'super_admin'),
-  deleteCategory
-);
-
 
 // ==========================================
 // PRODUCT ROUTES
@@ -120,6 +81,5 @@ router.delete(
   authorizeRoles('vendor', 'super_admin'),
   deleteProduct
 );
-
 
 module.exports = router;
