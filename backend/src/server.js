@@ -29,7 +29,11 @@ app.use(cors({
   credentials: true
 }));
 // Parse incoming JSON payloads
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 // Parse URL-encoded data
 app.use(express.urlencoded({ extended: true }));
 
