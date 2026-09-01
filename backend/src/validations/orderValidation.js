@@ -15,12 +15,6 @@ const validateOrder = [
         .isInt({ min: 1 })
         .withMessage("Quantity must be at least 1"),
 
-    body("totalAmount")
-        .isNumeric()
-        .withMessage("Total amount must be a number")
-        .custom(value => value >= 0)
-        .withMessage("Total amount cannot be negative"),
-
     validate
 ];
 
