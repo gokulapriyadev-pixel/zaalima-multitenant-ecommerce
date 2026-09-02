@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const razorpay = require('../config/razorpay');
 const Order = require('../models/Order');
+const { sendPaymentSuccessEmail } = require('../services/emailService');
 
 const createRazorpayOrder = asyncHandler(async (req, res) => {
   const { orderId } = req.body;
@@ -58,9 +59,9 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
   }
 
   const order = await Order.findOne({
-    razorpayOrderId: razorpay_order_id,
-    customerId: req.user._id
-  });
+  razorpayOrderId: razorpay_order_id,
+  customerId: req.user._id
+}).populate('customerId', 'name email');
 
   if (!order) {
     res.status(404);
@@ -80,8 +81,10 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     throw new Error('Invalid payment signature');
   }
 
-  order.paymentStatus = 'paid';
-  await order.save();
+order.paymentStatus = 'paid';
+await order.save();
+
+await sendPaymentSuccessEmail(order.customerId.email, order);
 
   res.status(200).json({
     status: 'success',
@@ -122,7 +125,7 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
   }
 
   console.log('🔔 Razorpay webhook received');
-  
+
   const event = req.body;
 
   const paymentEntity = event?.payload?.payment?.entity;
