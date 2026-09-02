@@ -269,6 +269,24 @@ const deleteStore = asyncHandler(async (req, res) => {
   });
 });
 
+// ==========================================
+// GET PUBLIC STORES
+// GET /api/stores/public
+// Access: Public
+// ==========================================
+
+const getPublicStores = asyncHandler(async (req, res) => {
+  const stores = await Store.find({
+    isActive: true
+  }).sort({ createdAt: -1 });
+
+  res.status(200).json({
+    status: 'success',
+    count: stores.length,
+    stores
+  });
+});
+
 
 module.exports = {
   createStore,
@@ -276,6 +294,7 @@ module.exports = {
   getMyStore,
   getStoreById,
   getStoreBySlug,
+  getPublicStores,
   updateStore,
   deleteStore
 };
