@@ -121,6 +121,8 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
     });
   }
 
+  console.log('🔔 Razorpay webhook received');
+  
   const event = req.body;
 
   const paymentEntity = event?.payload?.payment?.entity;
