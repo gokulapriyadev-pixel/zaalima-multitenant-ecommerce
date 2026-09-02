@@ -258,24 +258,14 @@ const getStoreProducts = asyncHandler(async (req, res) => {
 
 const getProductById = asyncHandler(async (req, res) => {
 
-  const product = await Product.findById(req.params.id)
-    .populate('categoryId', 'name slug');
+  const product = await Product.findOne({
+    _id: req.params.id,
+    isPublished: true
+  }).populate('categoryId', 'name slug');
 
   if (!product) {
     res.status(404);
     throw new Error('Product not found');
-  }
-
-  const store = await Store.findOne({
-    _id: product.storeId,
-    ownerId: req.user._id
-  });
-
-  if (!store) {
-    res.status(403);
-    throw new Error(
-      'You are not authorized to access this product'
-    );
   }
 
   res.status(200).json({

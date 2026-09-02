@@ -60,9 +60,9 @@ router.post(
 );
 
 // Get one product
+// Get one product
 router.get(
   '/:id',
-  protect,
   getProductById
 );
 
