@@ -1,4 +1,5 @@
 const express = require('express');
+
 const router = express.Router();
 
 const {
@@ -7,6 +8,7 @@ const {
   getMyStore,
   getStoreById,
   getStoreBySlug,
+  getPublicStores,
   updateStore,
   deleteStore
 } = require('../controllers/storeController');
@@ -15,7 +17,6 @@ const {
   protect,
   authorizeRoles
 } = require('../middlewares/authMiddleware');
-
 
 // ==========================================
 // PROTECTED VENDOR ROUTES
@@ -61,7 +62,6 @@ router.delete(
   deleteStore
 );
 
-
 // ==========================================
 // STORE BY ID
 // ==========================================
@@ -90,16 +90,20 @@ router.delete(
   deleteStore
 );
 
-
 // ==========================================
 // PUBLIC STORE ROUTE
 // ==========================================
 
-// Customers fetch store using public slug
+// Customers fetch all active stores
+router.get(
+  '/public',
+  getPublicStores
+);
+
+// Customers fetch one store using public slug
 router.get(
   '/:slug',
   getStoreBySlug
 );
-
 
 module.exports = router;
