@@ -1,16 +1,17 @@
-const dns = require("dns");
 const nodemailer = require("nodemailer");
 
-// Prefer IPv4 for SMTP connections
-dns.setDefaultResultOrder("ipv4first");
-
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
+  host: "192.178.158.108",
   port: Number(process.env.EMAIL_PORT || 587),
   secure: Number(process.env.EMAIL_PORT) === 465,
+
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
+  },
+
+  tls: {
+    servername: "smtp.gmail.com"
   }
 });
 
