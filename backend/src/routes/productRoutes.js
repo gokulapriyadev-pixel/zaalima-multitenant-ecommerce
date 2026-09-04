@@ -13,6 +13,7 @@ const {
     uploadProductImage
 } = require('../controllers/productController');
 const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
+const upload = require('../middlewares/uploadMiddleware');
 
 // ==========================================
 // Protected Vendor Routes (Tenant Management)
