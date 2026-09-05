@@ -86,3 +86,33 @@ exports.createOrder = async (req, res) => {
         session.endSession();
     }
 };
+
+exports.getOrderById = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id)
+            .populate("products.productId");
+
+        if (!order) {
+            return res.status(404).json({
+                message: "Order not found"
+            });
+        }
+
+        if (order.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                message: "You cannot access this order"
+            });
+        }
+
+        res.status(200).json({
+            order
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Unable to fetch order"
+        });
+    }
+};

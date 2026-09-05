@@ -6,7 +6,7 @@ const roleMiddleware = require('../middleware/roleMiddleware');
 
 const { validateOrder } = require('../validations/orderValidation');
 
-const {createOrder} = require('../controllers/orderController');
+const {createOrder, getOrderById} = require('../controllers/orderController');
 
 router.post(
     '/', 
@@ -15,5 +15,7 @@ router.post(
     validateOrder,
     createOrder
 );
+
+router.get("/:id", auth, getOrderById);
 
 module.exports = router;
