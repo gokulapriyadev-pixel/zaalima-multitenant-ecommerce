@@ -29,7 +29,11 @@ app.use(cors({
   credentials: true
 }));
 // Parse incoming JSON payloads
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 // Parse URL-encoded data
 app.use(express.urlencoded({ extended: true }));
 
@@ -46,11 +50,13 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/stores', require('./routes/storeRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/wishlist', require('./routes/wishlistRoutes'));
+
 
 // ==========================================
 // Global Error Handler (Fallback)

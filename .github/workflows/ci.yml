@@ -37,8 +37,10 @@ jobs:
           node --check src/controllers/productController.js
           node --check src/controllers/orderController.js
           node --check src/controllers/paymentController.js
+          node --check src/controllers/categoryController.js
           node --check src/routes/authRoutes.js
           node --check src/routes/storeRoutes.js
           node --check src/routes/productRoutes.js
           node --check src/routes/orderRoutes.js
           node --check src/routes/paymentRoutes.js
+          node --check src/routes/categoryRoutes.js

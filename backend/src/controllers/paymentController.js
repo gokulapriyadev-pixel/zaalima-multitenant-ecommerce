@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const razorpay = require('../config/razorpay');
 const Order = require('../models/Order');
+const { sendPaymentSuccessEmail } = require('../services/emailService');
 
 const createRazorpayOrder = asyncHandler(async (req, res) => {
   const { orderId } = req.body;
@@ -58,9 +59,9 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
   }
 
   const order = await Order.findOne({
-    razorpayOrderId: razorpay_order_id,
-    customerId: req.user._id
-  });
+  razorpayOrderId: razorpay_order_id,
+  customerId: req.user._id
+}).populate('customerId', 'name email');
 
   if (!order) {
     res.status(404);
@@ -80,8 +81,10 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     throw new Error('Invalid payment signature');
   }
 
-  order.paymentStatus = 'paid';
-  await order.save();
+order.paymentStatus = 'paid';
+await order.save();
+
+await sendPaymentSuccessEmail(order.customerId.email, order);
 
   res.status(200).json({
     status: 'success',
@@ -91,7 +94,100 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
   });
 });
 
+
+const handleRazorpayWebhook = asyncHandler(async (req, res) => {
+  const webhookSignature = req.headers['x-razorpay-signature'];
+
+  if (!webhookSignature) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Webhook signature is missing'
+    });
+  }
+
+  if (!process.env.RAZORPAY_WEBHOOK_SECRET) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Razorpay webhook secret is not configured'
+    });
+  }
+
+  const expectedSignature = crypto
+    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+    .update(req.rawBody)
+    .digest('hex');
+
+  if (expectedSignature !== webhookSignature) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Invalid webhook signature'
+    });
+  }
+
+  console.log('🔔 Razorpay webhook received');
+
+  const event = req.body;
+
+  const paymentEntity = event?.payload?.payment?.entity;
+
+  if (!paymentEntity) {
+    return res.status(200).json({
+      status: 'success',
+      message: 'Webhook received'
+    });
+  }
+
+  const razorpayOrderId = paymentEntity.order_id;
+
+  if (!razorpayOrderId) {
+    return res.status(200).json({
+      status: 'success',
+      message: 'Webhook received'
+    });
+  }
+
+  const order = await Order.findOne({
+    razorpayOrderId
+  });
+
+  if (!order) {
+    return res.status(200).json({
+      status: 'success',
+      message: 'Order not found, webhook acknowledged'
+    });
+  }
+
+  switch (event.event) {
+    case 'payment.captured':
+    case 'order.paid':
+      order.paymentStatus = 'paid';
+      break;
+
+    case 'payment.failed':
+      order.paymentStatus = 'failed';
+      break;
+
+    case 'refund.processed':
+      order.paymentStatus = 'refunded';
+      break;
+
+    default:
+      return res.status(200).json({
+        status: 'success',
+        message: 'Event received but no action required'
+      });
+  }
+
+  await order.save();
+
+  return res.status(200).json({
+    status: 'success',
+    message: 'Webhook processed successfully'
+  });
+});
+
 module.exports = {
   createRazorpayOrder,
-  verifyRazorpayPayment
+  verifyRazorpayPayment,
+  handleRazorpayWebhook
 };
