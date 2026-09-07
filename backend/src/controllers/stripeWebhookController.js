@@ -1,5 +1,5 @@
 const stripe = require("../config/stripe");
-const Order = require("../models/order");
+const Order = require("../models/Order");
 
 exports.handleWebhook = async (req, res) => {
   const signature = req.headers["stripe-signature"];
