@@ -1,94 +1,97 @@
-const stripe = require("../config/stripe");
-const Order = require("../models/order");
+const crypto = require('crypto');
+const asyncHandler = require('express-async-handler');
+const razorpay = require('../config/razorpay');
+const Order = require('../models/Order');
 
-exports.createCheckoutSession = async (req, res) => {
+const createRazorpayOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.body;
 
-    try {
+  if (!orderId) {
+    res.status(400);
+    throw new Error('Order ID is required');
+  }
 
-        const { orderId } = req.body;
+  const order = await Order.findOne({
+    _id: orderId,
+    customerId: req.user._id
+  });
 
-        const order = await Order.findById(orderId);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
 
-        if (!order) {
-            return res.status(404).json({
-                message: "Order not found"
-            });
-        }
+  if (order.paymentStatus === 'paid') {
+    res.status(400);
+    throw new Error('Order is already paid');
+  }
 
-        if (order.userId.toString() !== req.user.id) {
-            return res.status(403).json({
-                message: "You cannot pay for this order"
-            });
-        }
+  const options = {
+    amount: Math.round(order.totalAmount * 100),
+    currency: 'INR',
+    receipt: `order_${order._id}`
+  };
 
-        if (order.status !== "pending") {
-            return res.status(400).json({
-                message: "Order is not available for payment"
-            });
-        }
+  const razorpayOrder = await razorpay.orders.create(options);
 
-        const lineItems = [];
+  order.razorpayOrderId = razorpayOrder.id;
+  await order.save();
 
-        for (const item of order.products) {
+  res.status(201).json({
+    status: 'success',
+    message: 'Razorpay order created successfully',
+    order: razorpayOrder,
+    mongoOrderId: order._id
+  });
+});
 
-            const product = await require("../models/product")
-                .findById(item.productId);
+const verifyRazorpayPayment = asyncHandler(async (req, res) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature
+  } = req.body;
 
-            if (!product) {
-                return res.status(404).json({
-                    message: "Product not found"
-                });
-            }
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    res.status(400);
+    throw new Error('Payment verification details are required');
+  }
 
-            lineItems.push({
-                price_data: {
-                    currency: "inr",
+  const order = await Order.findOne({
+    razorpayOrderId: razorpay_order_id,
+    customerId: req.user._id
+  });
 
-                    product_data: {
-                        name: product.name
-                    },
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
 
-                    unit_amount: Math.round(product.price * 100)
-                },
+  const generatedSignature = crypto
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    .digest('hex');
 
-                quantity: item.quantity
-            });
-        }
+  if (generatedSignature !== razorpay_signature) {
+    order.paymentStatus = 'failed';
+    await order.save();
 
-        const session = await stripe.checkout.sessions.create({
+    res.status(400);
+    throw new Error('Invalid payment signature');
+  }
 
-            payment_method_types: ["card"],
+  order.paymentStatus = 'paid';
+  await order.save();
 
-            mode: "payment",
+  res.status(200).json({
+    status: 'success',
+    message: 'Payment verified successfully',
+    orderId: order._id,
+    paymentStatus: order.paymentStatus
+  });
+});
 
-            line_items: lineItems,
-
-            success_url:
-                "http://localhost:3000/payment-success",
-
-            cancel_url:
-                "http://localhost:3000/payment-cancel",
-
-            metadata: {
-                orderId: order._id.toString()
-            }
-        });
-
-        order.stripeSessionId = session.id;
-
-        await order.save();
-
-        res.status(200).json({
-            sessionId: session.id,
-            url: session.url
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            message: "Unable to create checkout session"
-        });
-    }
+module.exports = {
+  createRazorpayOrder,
+  verifyRazorpayPayment
 };

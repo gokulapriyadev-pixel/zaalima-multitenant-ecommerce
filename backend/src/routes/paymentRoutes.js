@@ -1,17 +1,14 @@
-const express = require("express");
-
+const express = require('express');
 const router = express.Router();
 
-const auth = require("../middleware/authMiddleware");
-
 const {
-    createCheckoutSession
-} = require("../controllers/paymentController");
+  createRazorpayOrder,
+  verifyRazorpayPayment
+} = require('../controllers/paymentController');
 
-router.post(
-    "/create-checkout-session",
-    auth,
-    createCheckoutSession
-);
+const { protect } = require('../middlewares/authMiddleware');
+
+router.post('/create-order', protect, createRazorpayOrder);
+router.post('/verify', protect, verifyRazorpayPayment);
 
 module.exports = router;

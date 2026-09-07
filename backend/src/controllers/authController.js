@@ -1,134 +1,166 @@
-const User = require('../models/user');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const asyncHandler = require('express-async-handler');
+const User = require('../models/User');
+const BlacklistToken = require('../models/BlacklistToken');
+const generateToken = require('../utils/generateToken');
 
-//signup
-exports.signup = async (req, res) => {
+/**
+ * @desc    Register a new user (Customer or Vendor)
+ * @route   POST /api/auth/register
+ * @access  Public
+ */
+const registerUser = asyncHandler(async (req, res) => {
+  const { name, email, password, role } = req.body;
 
-    const { name, email, password, role } = req.body;
+  // 1. Check if user already exists
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    res.status(400);
+    throw new Error('User already exists');
+  }
 
-    const existingUser = await User.findOne({ email });
+  // 2. Prevent arbitrary assignment of super_admin role
+  const assignedRole = role === 'vendor' ? 'vendor' : 'customer';
 
-    if (existingUser) {
-        return res.status(409).json({
-            message: "User already exists"
-        });
-    }
+  // 3. Create the user (Password is hashed automatically in the Model)
+  const user = await User.create({
+    name,
+    email,
+    password,
+    role: assignedRole,
+  });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-        name,
-        email,
-        password: hashedPassword,
-        role
-    });
-
+  // 4. Respond with user data and token
+  if (user) {
     res.status(201).json({
-        message: "Registered Successfully",
-        user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role
-        }
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
     });
-};
+  } else {
+    res.status(400);
+    throw new Error('Invalid user data');
+  }
+});
 
+/**
+ * @desc    Authenticate user & get token
+ * @route   POST /api/auth/login
+ * @access  Public
+ */
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-    //login
-exports.login = async (req, res) => {
+  // 1. Find user by email
+  const user = await User.findOne({ email });
 
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-        return res.status(401).json({
-            message: "Invalid credentials"
-        });
+  // 2. Check if user exists AND password matches using our Model method
+  if (user && (await user.matchPassword(password))) {
+    // Check if account is active
+    if (!user.isActive) {
+      res.status(401);
+      throw new Error('This account has been deactivated.');
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-        return res.status(401).json({
-            message: "Invalid credentials"
-        });
-    }
-
-    const accessToken = jwt.sign(
-        {
-            id: user._id,
-            role: user.role
-        },
-        process.env.JWT_SECRET,
-        {
-            expiresIn: process.env.JWT_EXPIRES_IN
-        }
-    );
-
-    const refreshToken = jwt.sign(
-    {
-        id: user._id
-    },
-    process.env.JWT_REFRESH_SECRET,
-    {
-        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN
-    }
-);
 
     res.json({
-    accessToken,
-    refreshToken
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } else {
+    res.status(401);
+    throw new Error('Invalid email or password');
+  }
 });
-};
 
-//refresh token
-exports.refreshToken = async (req, res) => {
+/**
+ * @desc    Logout user & blacklist token
+ * @route   POST /api/auth/logout
+ * @access  Private
+ */
+const logoutUser = asyncHandler(async (req, res) => {
+  let token;
 
-    const { refreshToken } = req.body;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
 
-    if (!refreshToken) {
-        return res.status(401).json({
-            message: "Refresh token required"
-        });
+  if (token) {
+    // Add the token to the blacklist so it can never be used again
+    await BlacklistToken.create({ token });
+  }
+
+  res.status(200).json({ message: 'Successfully logged out and token invalidated.' });
+});
+
+/**
+ * @desc    Get logged in user profile
+ * @route   GET /api/auth/me
+ * @access  Private
+ */
+const getMe = asyncHandler(async (req, res) => {
+  // req.user is set by our 'protect' middleware
+  const user = await User.findById(req.user._id).select('-password');
+  
+  if (user) {
+    res.json(user);
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+/**
+ * @desc    Update user profile
+ * @route   PUT /api/auth/profile
+ * @access  Private
+ */
+const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    // If they are trying to change their email, make sure it isn't already taken
+    if (req.body.email && req.body.email !== user.email) {
+      const emailExists = await User.findOne({ email: req.body.email });
+      if (emailExists) {
+        res.status(400);
+        throw new Error('This email is already in use by another account.');
+      }
     }
 
-    try {
+    // Update fields if they were provided in the request body
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
 
-        const decoded = jwt.verify(
-            refreshToken,
-            process.env.JWT_REFRESH_SECRET
-        );
-
-        const user = await User.findById(decoded.id);
-
-        if (!user) {
-            return res.status(401).json({
-                message: "User not found"
-            });
-        }
-
-        const newAccessToken = jwt.sign(
-            {
-                id: user._id,
-                role: user.role
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: process.env.JWT_EXPIRES_IN
-            }
-        );
-
-        res.json({
-            accessToken: newAccessToken
-        });
-
-    } catch (error) {
-
-        return res.status(401).json({
-            message: "Invalid or expired refresh token"
-        });
+    // If a new password is provided, assign it. 
+    // The Mongoose pre-save middleware will catch this and hash it automatically!
+    if (req.body.password) {
+      user.password = req.body.password;
     }
+
+    const updatedUser = await user.save();
+
+    // Return the updated data along with a fresh token
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      token: generateToken(updatedUser._id),
+    });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+module.exports = {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getMe,
+  updateProfile
 };

@@ -1,15 +1,22 @@
 const express = require('express');
 const router = express.Router();
+const { 
+  registerUser, 
+  loginUser, 
+  logoutUser,
+  getMe,
+  updateProfile
+} = require('../controllers/authController');
+const { protect } = require('../middlewares/authMiddleware');
 
-const {
-    validateRegister,
-    validateLogin
-} = require('../validations/authValidation');
+// Public Routes
+router.post('/register', registerUser);
+router.post('/login', loginUser);
 
-const {signup, login, refreshToken} = require('../controllers/authController');
-
-router.post('/signup', validateRegister, signup);
-router.post('/login', validateLogin, login);
-router.post('/refresh', refreshToken);
+// Private/Protected Routes
+// We apply the 'protect' middleware to ensure only authenticated users can access this
+router.post('/logout', protect, logoutUser);
+router.get('/me', protect, getMe);
+router.put('/profile', protect, updateProfile);
 
 module.exports = router;

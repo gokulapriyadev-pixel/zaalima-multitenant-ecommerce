@@ -1,13 +1,142 @@
-const Store = require('../models/store');
+const asyncHandler = require('express-async-handler');
+const Store = require('../models/Store');
+const User = require('../models/User');
+const Cart = require('../models/Cart');
 
-exports.createStore = async (req , res) => {
-    // console.log("REQUEST BODY:", req.body);
-    // console.log("REQUEST USER:", req.user);
-    const {name} = req.body;
+/**
+ * @desc    Create a new store (Tenant)
+ * @route   POST /api/stores
+ * @access  Private (Vendor only)
+ */
+const createStore = asyncHandler(async (req, res) => {
+  const { name, slug, description, contactEmail } = req.body;
 
-    const store = await Store.create({
-        name,
-        ownerId : req.user.id
-    });
+  // 1. Verify the user doesn't already own a store (assuming 1 store per vendor for now)
+  const existingStore = await Store.findOne({ ownerId: req.user._id });
+  if (existingStore) {
+    res.status(400);
+    throw new Error('You already have a store created on this account.');
+  }
+
+  // 2. Check if the requested slug is already taken (Slugs must be globally unique across the platform)
+  const slugExists = await Store.findOne({ slug });
+  if (slugExists) {
+    res.status(400);
+    throw new Error('That store URL (slug) is already taken. Please choose another.');
+  }
+
+  // 3. Create the store
+  const store = await Store.create({
+    ownerId: req.user._id,
+    name,
+    slug,
+    description,
+    contactEmail: contactEmail || req.user.email, // Default to user email if not provided
+  });
+
+  if (store) {
     res.status(201).json(store);
-}
+  } else {
+    res.status(400);
+    throw new Error('Invalid store data');
+  }
+});
+
+/**
+ * @desc    Get the current vendor's store profile
+ * @route   GET /api/stores/my-store
+ * @access  Private (Vendor only)
+ */
+const getMyStore = asyncHandler(async (req, res) => {
+  // Find the store that belongs to the currently logged-in user
+  const store = await Store.findOne({ ownerId: req.user._id });
+
+  if (store) {
+    res.json(store);
+  } else {
+    res.status(404);
+    throw new Error('Store not found. Please create one.');
+  }
+});
+
+/**
+ * @desc    Get a store by its public slug (for the customer storefront)
+ * @route   GET /api/stores/:slug
+ * @access  Public
+ */
+const getStoreBySlug = asyncHandler(async (req, res) => {
+  const store = await Store.findOne({ slug: req.params.slug, isActive: true });
+
+  if (store) {
+    // Exclude sensitive internal data if necessary, though the model is fairly safe
+    res.json(store);
+  } else {
+    res.status(404);
+    throw new Error('Store not found or is currently inactive.');
+  }
+});
+
+/**
+ * @desc    Deactivate a store (Soft Delete)
+ * @route   DELETE /api/stores/my-store
+ * @access  Private (Vendor only)
+ */
+const deleteStore = asyncHandler(async (req, res) => {
+  const store = await Store.findOne({ ownerId: req.user._id });
+
+  if (!store) {
+    res.status(404);
+    throw new Error('Store not found.');
+  }
+
+  // Soft delete: We deactivate the store instead of physically deleting it.
+  // This ensures past customer orders don't break when looking for the store reference.
+  store.isActive = false;
+  await store.save();
+
+  // CLEANUP: Instantly delete all active carts belonging to this store
+  // so customers don't try to checkout from a deactivated store.
+  await Cart.deleteMany({ storeId: store._id });
+
+  res.json({ message: 'Store successfully deactivated and removed from public view.' });
+});
+
+/**
+ * @desc    Update store details
+ * @route   PUT /api/stores/my-store
+ * @access  Private (Vendor only)
+ */
+const updateStore = asyncHandler(async (req, res) => {
+  const store = await Store.findOne({ ownerId: req.user._id });
+
+  if (!store) {
+    res.status(404);
+    throw new Error('Store not found.');
+  }
+
+  // We don't typically allow updating the slug to prevent breaking old links,
+  // but we can let them update text, descriptions, and theme colors.
+  store.name = req.body.name || store.name;
+  store.description = req.body.description || store.description;
+  store.contactEmail = req.body.contactEmail || store.contactEmail;
+  
+  if (req.body.themeColors) {
+    store.themeColors = { ...store.themeColors, ...req.body.themeColors };
+  }
+  
+  // If they want to reactivate a deleted store
+  if (req.body.isActive !== undefined) {
+    store.isActive = req.body.isActive;
+  }
+
+  const updatedStore = await store.save();
+  res.json(updatedStore);
+});
+
+module.exports = {
+  createStore,
+  getMyStore,
+  getStoreBySlug,
+  deleteStore,
+  updateStore
+};
