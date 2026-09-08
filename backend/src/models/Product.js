@@ -69,4 +69,4 @@ const productSchema = new mongoose.Schema({
 // Ensure product slugs are unique ONLY within a specific store
 productSchema.index({ storeId: 1, slug: 1 }, { unique: true });
 
-module.exports = mongoose.model('Product', productSchema);
+module.exports = mongoose.model('Product', productSchema);
