@@ -1,9 +1,13 @@
-
+import { login } from "../redux/authSlice";
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import api from "../services/api";
 
 function Login() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -33,12 +37,9 @@ function Login() {
     }
   }
 
-  const handleSubmit = (e) => {
-
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setServerError("");
-
-
 
     if (!formData.email || !formData.password) {
       setError("Please fill in both fields.");
@@ -56,11 +57,39 @@ function Login() {
       return;
     }
 
-
     setError("");
     setIsSubmitting(true);
-    // Backend login API will be connected later
-    console.log("Customer login");
+
+    try {
+      // 4. Hit the backend
+      const response = await api.post('/auth/login', { 
+        email: formData.email, 
+        password: formData.password 
+      });
+      
+      if (response.data.role !== 'customer') {
+        setServerError("Access denied. Please use the appropriate portal.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 5. Save to local storage
+      localStorage.setItem('customerToken', response.data.token);
+      localStorage.setItem('customerInfo', JSON.stringify(response.data));
+
+      // 6. TELL REDUX YOU ARE LOGGED IN
+      dispatch(login({
+        user: response.data,
+        token: response.data.token
+      }));
+
+      setIsSubmitting(false);
+      navigate('/'); 
+      
+    } catch (error) {
+      setIsSubmitting(false);
+      setServerError(error.response?.data?.message || "Invalid email or password.");
+    }
   };
 
   return (
