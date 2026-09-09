@@ -1,82 +1,118 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ProductCard from "../components/ProductCard";
+import {
+  getPublicStores,
+  getAllPublicProducts,
+} from "../services/api";
 
 function Products() {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [products, setProducts] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const products = [
-    {
-      id: 1,
-      name: "Classic T-Shirt",
-      price: 799,
-      category: "Fashion",
-      store: "Fashion Store",
-    },
-    {
-      id: 2,
-      name: "Wireless Headphones",
-      price: 2499,
-      category: "Electronics",
-      store: "Electronics Store",
-    },
-    {
-      id: 3,
-      name: "Modern Table Lamp",
-      price: 1299,
-      category: "Home",
-      store: "Home & Living",
-    },
-    {
-      id: 4,
-      name: "Casual Sneakers",
-      price: 1999,
-      category: "Fashion",
-      store: "Fashion Store",
-    },
-    {
-      id: 5,
-      name: "Smart Watch",
-      price: 3499,
-      category: "Electronics",
-      store: "Electronics Store",
-    },
-    {
-      id: 6,
-      name: "Cotton Bedsheet",
-      price: 999,
-      category: "Home",
-      store: "Home & Living",
-    },
-    {
-      id: 7,
-      name: "Running Shoes",
-      price: 2299,
-      category: "Sports",
-      store: "Sports Store",
-    },
-    {
-      id: 8,
-      name: "Backpack",
-      price: 1499,
-      category: "Fashion",
-      store: "Fashion Store",
-    },
-  ];
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-  const categories = [
-    "All",
-    "Fashion",
-    "Electronics",
-    "Home",
-    "Sports",
-  ];
+        const storesData = await getPublicStores();
+        const publicStores = storesData.stores || [];
 
-  const filteredProducts =
-    selectedCategory === "All"
-      ? products
-      : products.filter(
-          (product) => product.category === selectedCategory
-        );
+        setStores(publicStores);
+
+        const publicProducts =
+          await getAllPublicProducts(publicStores);
+
+        const productsWithStore = publicProducts.map((product) => {
+          const store = publicStores.find(
+            (item) =>
+              item._id === product.storeId ||
+              item._id === product.storeId?._id
+          );
+
+          return {
+            ...product,
+            store: store?.name || "Zaalima Store",
+          };
+        });
+
+        setProducts(productsWithStore);
+      } catch (err) {
+        console.error("Failed to load products:", err);
+        setError(err.message || "Unable to load products.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const categories = useMemo(() => {
+    const uniqueCategories = products
+      .map((product) => {
+        if (typeof product.categoryId === "object") {
+          return product.categoryId?.name;
+        }
+
+        return product.category;
+      })
+      .filter(Boolean);
+
+    return ["All", ...new Set(uniqueCategories)];
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === "All") {
+      return products;
+    }
+
+    return products.filter((product) => {
+      const category =
+        typeof product.categoryId === "object"
+          ? product.categoryId?.name
+          : product.category;
+
+      return category === selectedCategory;
+    });
+  }, [products, selectedCategory]);
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FAFAF7]">
+        <p className="text-[#6B6F6D]">
+          Loading products...
+        </p>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FAFAF7] px-4">
+        <div className="text-center">
+          <h1 className="font-serif text-3xl text-[#14201C]">
+            Unable to load products
+          </h1>
+
+          <p className="mt-3 text-sm text-[#6B6F6D]">
+            {error}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-6 rounded-lg bg-[#0F2C27] px-6 py-3 text-sm font-semibold text-white hover:bg-[#123832]"
+          >
+            Try Again
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#FAFAF7]">
@@ -140,7 +176,7 @@ function Products() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredProducts.map((product) => (
               <ProductCard
-                key={product.id}
+                key={product._id}
                 product={product}
               />
             ))}
@@ -152,7 +188,7 @@ function Products() {
             </h2>
 
             <p className="mt-2 text-sm text-[#6B6F6D]">
-              Try selecting a different category.
+              There are currently no published products.
             </p>
           </div>
         )}

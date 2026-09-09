@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5000/api";
 
 const request = async (endpoint, options = {}) => {
   const token = localStorage.getItem("token");
@@ -81,6 +83,14 @@ export const getStoreBySlug = async (slug) => {
 // Get products belonging to a public store
 export const getStoreProducts = async (storeId) => {
   return request(`/products/store/${storeId}`);
+};
+
+export const getAllPublicProducts = async (stores) => {
+  const results = await Promise.all(
+    stores.map((store) => getStoreProducts(store._id))
+  );
+
+  return results.flatMap((result) => result.products || []);
 };
 
 // Get one public product by ID
