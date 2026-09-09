@@ -1,9 +1,14 @@
-
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+
+import { login } from "../redux/authSlice";
+import { loginUser } from "../services/api";
 
 function Login() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -33,35 +38,56 @@ function Login() {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    e.preventDefault();
-    setServerError("");
+  setError("");
+  setServerError("");
 
+  if (!formData.email || !formData.password) {
+    setError("Please fill in both fields.");
+    return;
+  }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!formData.email || !formData.password) {
-      setError("Please fill in both fields.");
-      return;
-    }
+  if (!emailRegex.test(formData.email)) {
+    setError("Please enter a valid email address.");
+    return;
+  }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
+  if (formData.password.length < 6) {
+    setError("Password must be at least 6 characters.");
+    return;
+  }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
-
-    setError("");
+  try {
     setIsSubmitting(true);
-    // Backend login API will be connected later
-    console.log("Customer login");
-  };
+
+    const data = await loginUser(
+      formData.email,
+      formData.password
+    );
+
+    dispatch(
+      login({
+        user: {
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+        },
+        token: data.token,
+      })
+    );
+
+    navigate("/");
+  } catch (err) {
+    setServerError(err.message || "Login failed. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
 

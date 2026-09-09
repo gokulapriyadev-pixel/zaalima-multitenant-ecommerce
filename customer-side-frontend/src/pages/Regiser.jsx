@@ -1,9 +1,14 @@
 
 import { CircleAlert } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { login } from "../redux/authSlice";
+import { registerUser } from "../services/api";
 
 function Register() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
 
@@ -23,37 +28,68 @@ function Register() {
     }
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    setServerError("");
+  setError("");
+  setServerError("");
 
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError("Please fill in all fields.");
-      return;
-    }
+  if (
+    !formData.name ||
+    !formData.email ||
+    !formData.password ||
+    !formData.confirmPassword
+  ) {
+    setError("Please fill in all fields.");
+    return;
+  }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
+  if (formData.password.length < 6) {
+    setError("Password must be at least 6 characters.");
+    return;
+  }
 
+  if (formData.password !== formData.confirmPassword) {
+    setError("Passwords do not match.");
+    return;
+  }
 
-    setError("");
-    setIsSubmitting(true);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // Backend registration API will be connected later
-    console.log("Customer registration");
-  };
+  if (!emailRegex.test(formData.email)) {
+    setError("Please enter a valid email address.");
+    return;
+  }
+
+  setError("");
+  setIsSubmitting(true);
+
+  try {
+    const data = await registerUser(
+      formData.name,
+      formData.email,
+      formData.password
+    );
+
+    dispatch(
+      login({
+        user: {
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+        },
+        token: data.token,
+      })
+    );
+
+    navigate("/");
+  } catch (error) {
+    setServerError(error.message || "Registration failed.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <main className="flex min-h-[calc(100vh-64px)] bg-gray-50 ">
