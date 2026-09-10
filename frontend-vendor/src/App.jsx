@@ -4,6 +4,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
+import Orders from "./pages/Orders";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -34,6 +36,8 @@ function App() {
         />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
   );
