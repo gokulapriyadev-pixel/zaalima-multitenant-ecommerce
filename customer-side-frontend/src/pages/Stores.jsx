@@ -116,58 +116,59 @@ const CATEGORY_COLORS = {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
  
-            {filteredStores.map((store) => (
-            <div
-              key={store.id}
-              className="overflow-hidden rounded-2xl border border-[#E4E1D9] bg-white transition hover:-translate-y-1 hover:border-[#B8892B]/40 hover:shadow-md"
-            >
- 
-              {/* Store Image */}
-              <div className="flex h-52 items-center justify-center bg-[#FAFAF7] overflow-hidden">
-                {store.logoUrl ? (
-                  <img
-                    src={store.logoUrl}
-                    alt={store.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-sm text-[#9A9D96]">Store Image</span>
-                )}
-              </div>
- 
-              {/* Store Information */}
-              <div className="p-6">
- 
-                <span className="inline-block rounded-full bg-[#0F2C27]/5 px-3 py-1 text-xs font-medium uppercase tracking-wide text-[#0F2C27]"
-                style={{
-                  backgroundColor: `${CATEGORY_COLORS[store.category]}1F`,
-                   color: CATEGORY_COLORS[store.category],
+            {filteredStores.map((store) => {
+              const storeId = store._id || store.id;
+              return (
+                <div
+                  key={storeId}
+                  className="overflow-hidden rounded-2xl border border-[#E4E1D9] bg-white transition hover:-translate-y-1 hover:border-[#B8892B]/40 hover:shadow-md"
+                >
+                  {/* Store Image */}
+                  <div className="flex h-52 items-center justify-center bg-[#FAFAF7] overflow-hidden">
+                    {store.logoUrl ? (
+                      <img
+                        src={store.logoUrl}
+                        alt={store.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm text-[#9A9D96]">Store Image</span>
+                    )}
+                  </div>
 
-                }}
-                >
-                  {store.category}
-                </span>
- 
-                <h2 className="mt-4 text-xl font-semibold text-[#14201C]">
-                  {store.name}
-                </h2>
- 
-                <p className="mt-2 text-sm leading-6 text-[#6B6F6D]">
-                  {store.description}
-                </p>
- 
-                <Link
-                  to={`/stores/${store.id}`}
-                  className="mt-5 inline-flex items-center text-sm font-semibold text-[#0F2C27] hover:underline"
-                >
-                  Visit Store
-                  <span className="ml-1">→</span>
-                </Link>
- 
-              </div>
- 
-            </div>
-            ))}
+                  {/* Store Information */}
+                  <div className="p-6">
+                    {store.category && (
+                      <span
+                        className="inline-block rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wide"
+                        style={{
+                          backgroundColor: `${CATEGORY_COLORS[store.category] || "#0F2C27"}1F`,
+                          color: CATEGORY_COLORS[store.category] || "#0F2C27",
+                        }}
+                      >
+                        {store.category}
+                      </span>
+                    )}
+
+                    <h2 className="mt-4 text-xl font-semibold text-[#14201C]">
+                      {store.name}
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-6 text-[#6B6F6D] line-clamp-2">
+                      {store.description || "Browse catalog from this vendor."}
+                    </p>
+
+                    <Link
+                      to={`/products?store=${storeId}&storeName=${encodeURIComponent(store.name)}`}
+                      className="mt-5 inline-flex items-center text-sm font-semibold text-[#0F2C27] hover:underline"
+                    >
+                      Visit Store
+                      <span className="ml-1">→</span>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
  
           </div>
         )}

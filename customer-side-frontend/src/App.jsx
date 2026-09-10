@@ -2,7 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
 import Home from './pages/Home'
 import Login from './pages/Login'
-import Register from './pages/Regiser'
+import Register from './pages/Register'
 import StoreLayout from './components/StoreLayout'
 import Stores from './pages/Stores'
 import Products from './pages/Products'
@@ -11,6 +11,8 @@ import Scrolltop from './components/Scrolltop'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import OrderSuccess from './pages/OrderSuccess'
+import Orders from './pages/Orders'
+import OrderDetails from './pages/OrderDetails'
 
 function App() {
   return (
@@ -26,12 +28,12 @@ function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/order-success/:id" element={<OrderSuccess />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/:id" element={<OrderDetails />} />
           </Route>
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
-
         </Routes>
 
       </BrowserRouter>

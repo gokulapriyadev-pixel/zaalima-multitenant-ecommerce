@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import api from "../services/api";
 
 function Products() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const storeFilter = searchParams.get("store");
+  const storeNameFilter = searchParams.get("storeName");
+
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +26,8 @@ function Products() {
           const storeProducts = (prodRes.data.products || []).map(p => ({
             ...p,
             id: p._id, // map MongoDB _id to frontend id
-            store: store.name
+            store: store.name,
+            storeId: store._id
           }));
           allProducts = [...allProducts, ...storeProducts];
         }
@@ -39,25 +45,55 @@ function Products() {
 
   const categories = ["All", "Fashion", "Electronics", "Home", "Sports"];
 
-  const filteredProducts =
-    selectedCategory === "All"
-      ? products
-      : products.filter(
-          (product) =>
-            product.category?.name === selectedCategory ||
-            product.category === selectedCategory ||
-            product.categoryId?.name === selectedCategory
-        );
+  const filteredProducts = products.filter((product) => {
+    // Check Store filter
+    if (storeFilter) {
+      const pStoreId = product.storeId?._id || product.storeId;
+      if (String(pStoreId) !== String(storeFilter)) {
+        return false;
+      }
+    }
+
+    // Check Category filter
+    if (selectedCategory !== "All") {
+      const catMatch =
+        product.category?.name === selectedCategory ||
+        product.category === selectedCategory ||
+        product.categoryId?.name === selectedCategory;
+      if (!catMatch) return false;
+    }
+
+    return true;
+  });
 
   return (
     <main className="min-h-screen bg-[#FAFAF7]">
       <section className="border-b border-[#E4E1D9] bg-white">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-wider text-[#B8892B]">Marketplace</p>
-          <h1 className="mt-2 font-serif text-4xl tracking-tight text-[#14201C]">All Products</h1>
+          <h1 className="mt-2 font-serif text-4xl tracking-tight text-[#14201C]">
+            {storeNameFilter ? `${storeNameFilter}'s Catalog` : "All Products"}
+          </h1>
           <p className="mt-4 max-w-2xl text-[#6B6F6D]">
-            Discover live products uploaded from vendor stores across the platform.
+            {storeNameFilter
+              ? `Browsing exclusive items directly curated by ${storeNameFilter}.`
+              : "Discover live products uploaded from vendor stores across the platform."}
           </p>
+
+          {storeFilter && (
+            <div className="mt-4 flex items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0F2C27]/10 px-3 py-1 text-xs font-semibold text-[#0F2C27]">
+                Filtered by store: {storeNameFilter || storeFilter}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSearchParams({})}
+                className="text-xs font-semibold text-red-600 underline hover:text-red-800"
+              >
+                Clear store filter
+              </button>
+            </div>
+          )}
 
           {/* Category Filter Pills */}
           <div className="mt-8 flex flex-wrap gap-2">
