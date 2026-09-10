@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { ShieldCheck, Store as StoreIcon, Truck } from "lucide-react";
 
 
 import headphone from "../assets/headphone.png";

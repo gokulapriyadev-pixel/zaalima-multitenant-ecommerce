@@ -1,9 +1,26 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../services/api";
 
 
 function Stores() {
+  const [stores, setStores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const { data } = await api.get('/stores/public');
+        setStores(data.stores || []);
+      } catch (err) {
+        console.error("Failed to load stores", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStores();
+  }, []);
 
 const CATEGORIES = [
   { value: "all", label: "All Categories" },
@@ -24,48 +41,6 @@ const CATEGORY_COLORS = {
   Sports: "#B5714A",
   Books: "#7A6A8C",
 };
-
- const [selectedCategory, setSelectedCategory] = useState("all");
-
-   const stores = [
-    {
-      id: 1,
-      name: "Fashion Store",
-      description: "Clothing, footwear and fashion accessories.",
-      category: "Fashion",
-    },
-    {
-      id: 2,
-      name: "Electronics Store",
-      description: "Smartphones, gadgets and electronic accessories.",
-      category: "Electronics",
-    },
-    {
-      id: 3,
-      name: "Home & Living",
-      description: "Furniture, decor and products for your home.",
-      category: "Home",
-    },
-    {
-      id: 4,
-      name: "Beauty Store",
-      description: "Beauty, skincare and personal care products.",
-      category: "Beauty",
-    },
-    {
-      id: 5,
-      name: "Sports Store",
-      description: "Sports equipment, fitness and outdoor products.",
-      category: "Sports",
-    },
-    {
-      id: 6,
-      name: "Books & Stationery",
-      description: "Books, notebooks and everyday stationery.",
-      category: "Books",
-    },
-  ];
-
 
 // Filter stores based on selected category
   const filteredStores = useMemo(() => {
@@ -125,7 +100,11 @@ const CATEGORY_COLORS = {
         </div>
 
        {/* Store Grid */}
-        {filteredStores.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#0F2C27] border-t-transparent"></div>
+          </div>
+        ) : filteredStores.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#E4E1D9] bg-white px-6 py-16 text-center">
             <p className="text-sm font-medium text-[#14201C]">
               No stores found in this category.
@@ -144,10 +123,16 @@ const CATEGORY_COLORS = {
             >
  
               {/* Store Image */}
-              <div className="flex h-52 items-center justify-center bg-[#FAFAF7]">
-                <span className="text-sm text-[#9A9D96]">
-                  Store Image
-                </span>
+              <div className="flex h-52 items-center justify-center bg-[#FAFAF7] overflow-hidden">
+                {store.logoUrl ? (
+                  <img
+                    src={store.logoUrl}
+                    alt={store.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm text-[#9A9D96]">Store Image</span>
+                )}
               </div>
  
               {/* Store Information */}

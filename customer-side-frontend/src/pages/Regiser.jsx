@@ -13,7 +13,6 @@ function Register() {
 
   const [error, setError] = useState("");
   const [serverError, setServerError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -60,7 +59,7 @@ function Register() {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: 'customer' 
+        role: 'customer'
       });
 
       // 5. Save to local storage
@@ -74,8 +73,8 @@ function Register() {
       }));
 
       setIsSubmitting(false);
-      navigate('/'); 
-      
+      navigate('/');
+
     } catch (error) {
       setIsSubmitting(false);
       setServerError(error.response?.data?.message || "Registration failed.");
@@ -233,9 +232,10 @@ function Register() {
               {/* Register Button */}
               <button
                 type="submit"
-                className="w-full rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.99] cursor-pointer6"
+                disabled={isSubmitting}
+                className="w-full cursor-pointer rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Create Account
+                {isSubmitting ? "Creating Account..." : "Create Account"}
               </button>
 
             </form>

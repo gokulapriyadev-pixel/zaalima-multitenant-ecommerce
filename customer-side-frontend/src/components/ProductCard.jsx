@@ -5,11 +5,11 @@ function ProductCard({ product }) {
     <div className="group overflow-hidden rounded-2xl border border-[#E4E1D9] bg-white transition hover:-translate-y-1 hover:border-[#B8892B]/40 hover:shadow-md">
 
       {/* Product Image */}
-      <Link to={`/products/${product.id}`}>
+      <Link to={`/products/${product.id || product._id}`}>
         <div className="flex h-64 items-center justify-center overflow-hidden bg-[#FAFAF7]">
-          {product.image ? (
+          {product.images && product.images.length > 0 ? (
             <img
-              src={product.image}
+              src={product.images[0]}
               alt={product.name}
               className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             />
