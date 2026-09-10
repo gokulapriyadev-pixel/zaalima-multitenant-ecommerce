@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
-
     name: {
         type: String,
         required: true,
@@ -25,7 +24,11 @@ const productSchema = new mongoose.Schema({
         ref: 'store',
         required: true,
         index: true
-    }
+    },
+
+    images: [{
+        type: String
+    }]
 
 }, { timestamps: true });
 
