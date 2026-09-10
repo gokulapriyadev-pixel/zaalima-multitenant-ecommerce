@@ -192,6 +192,37 @@ const createOrder = asyncHandler(async (req, res) => {
   }
 
   // ==========================================
+  // ATOMICALLY DEDUCT INVENTORY
+  // ==========================================
+
+  const deductedProducts = [];
+  for (const item of checkoutProducts) {
+    const updatedProduct = await Product.findOneAndUpdate(
+      {
+        _id: item.productId,
+        inventoryCount: { $gte: item.quantity }
+      },
+      {
+        $inc: { inventoryCount: -item.quantity }
+      },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      // Roll back any items deducted during this loop
+      for (const deducted of deductedProducts) {
+        await Product.findByIdAndUpdate(deducted.productId, {
+          $inc: { inventoryCount: deducted.quantity }
+        });
+      }
+      res.status(400);
+      throw new Error('One or more items are out of stock. Please adjust your cart and try again.');
+    }
+
+    deductedProducts.push(item);
+  }
+
+  // ==========================================
   // CREATE ORDER
   // ==========================================
 
@@ -204,21 +235,6 @@ const createOrder = asyncHandler(async (req, res) => {
     orderStatus: 'processing',
     shippingAddress
   });
-
-  // ==========================================
-  // DEDUCT INVENTORY
-  // ==========================================
-
-  for (const item of checkoutProducts) {
-    await Product.findByIdAndUpdate(
-      item.productId,
-      {
-        $inc: {
-          inventoryCount: -item.quantity
-        }
-      }
-    );
-  }
 
   // ==========================================
   // EMPTY CART

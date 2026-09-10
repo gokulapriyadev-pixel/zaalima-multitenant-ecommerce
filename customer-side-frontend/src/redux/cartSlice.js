@@ -32,19 +32,28 @@ const cartSlice = createSlice({
     addToCart: (state, action) => {
       const itemId = action.payload.id || action.payload._id;
       const quantityToAdd = action.payload.quantity ?? 1;
+      const itemStock = action.payload.stock !== undefined ? Number(action.payload.stock) : Infinity;
+
+      // Abort if item is out of stock
+      if (itemStock <= 0) {
+        return;
+      }
 
       const existingItem = state.cartItems.find(
         (item) => (item.id || item._id) === itemId
       );
 
       if (existingItem) {
-        existingItem.quantity += quantityToAdd;
+        const currentStock = existingItem.stock !== undefined ? Number(existingItem.stock) : itemStock;
+        existingItem.quantity = Math.min(currentStock, existingItem.quantity + quantityToAdd);
+        existingItem.stock = currentStock;
       } else {
         state.cartItems.push({
           ...action.payload,
           id: itemId,
           _id: itemId,
-          quantity: quantityToAdd,
+          stock: itemStock,
+          quantity: Math.min(itemStock, quantityToAdd),
         });
       }
       saveCartToStorage(state.cartItems);
@@ -69,8 +78,11 @@ const cartSlice = createSlice({
         (item) => (item.id || item._id) === targetId
       );
       if (item) {
-        item.quantity += 1;
-        saveCartToStorage(state.cartItems);
+        const itemStock = item.stock !== undefined ? Number(item.stock) : Infinity;
+        if (item.quantity < itemStock) {
+          item.quantity += 1;
+          saveCartToStorage(state.cartItems);
+        }
       }
     },
 

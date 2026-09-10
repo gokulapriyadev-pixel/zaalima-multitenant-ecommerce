@@ -74,7 +74,8 @@ function ProductDetails() {
     );
   }
 
-  const stock = product.inventoryCount !== undefined ? product.inventoryCount : 0;
+  const stock = Number(product.inventoryCount ?? product.stock ?? 0);
+  const isOutOfStock = stock <= 0;
   const storeName = product.storeId?.name || "Store";
   const storeId = product.storeId?._id || product.storeId;
   const categoryName = product.categoryId?.name || "General";
@@ -93,7 +94,7 @@ function ProductDetails() {
   };
 
   const handleAddToCart = () => {
-    if (stock <= 0) return;
+    if (isOutOfStock) return;
 
     dispatch(
       addToCart({
@@ -104,7 +105,7 @@ function ProductDetails() {
         price: product.price,
         image: displayImage,
         stock: stock,
-        quantity,
+        quantity: Math.min(stock, quantity),
       })
     );
 
@@ -113,7 +114,7 @@ function ProductDetails() {
   };
 
   const handleBuyNow = () => {
-    if (stock <= 0) return;
+    if (isOutOfStock) return;
     handleAddToCart();
     navigate("/checkout");
   };
@@ -263,20 +264,20 @@ function ProductDetails() {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={stock <= 0}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#0F2C27] px-6 py-3.5 text-sm font-semibold text-[#0F2C27] transition hover:bg-[#0F2C27]/5 disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={isOutOfStock}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#0F2C27] px-6 py-3.5 text-sm font-semibold text-[#0F2C27] transition hover:bg-[#0F2C27]/5 disabled:cursor-not-allowed disabled:opacity-40 disabled:border-gray-300 disabled:text-gray-400"
               >
                 <ShoppingBag size={18} />
-                Add to Cart
+                {isOutOfStock ? "Out of Stock" : "Add to Cart"}
               </button>
 
               <button
                 type="button"
                 onClick={handleBuyNow}
-                disabled={stock <= 0}
-                className="flex-1 rounded-xl bg-[#0F2C27] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#123832] disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={isOutOfStock}
+                className="flex-1 rounded-xl bg-[#0F2C27] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#123832] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
               >
-                Buy Now
+                {isOutOfStock ? "Out of Stock" : "Buy Now"}
               </button>
             </div>
           </div>

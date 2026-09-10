@@ -12,10 +12,14 @@ function ProductCard({ product }) {
   const storeId = product.storeId?._id || product.storeId;
   const storeName = product.storeId?.name || product.store || "Store";
   const image = product.images && product.images.length > 0 ? product.images[0] : (product.image || "");
+  const stock = Number(product.inventoryCount ?? product.stock ?? 0);
+  const isOutOfStock = stock <= 0;
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isOutOfStock) return;
 
     dispatch(
       addToCart({
@@ -25,7 +29,7 @@ function ProductCard({ product }) {
         name: product.name,
         price: product.price,
         image: image,
-        stock: product.inventoryCount ?? product.stock ?? 99,
+        stock: stock,
         quantity: 1,
       })
     );
@@ -39,7 +43,7 @@ function ProductCard({ product }) {
       <div>
         {/* Product Image */}
         <Link to={`/products/${productId}`}>
-          <div className="flex h-64 items-center justify-center overflow-hidden bg-[#FAFAF7]">
+          <div className="relative flex h-64 items-center justify-center overflow-hidden bg-[#FAFAF7]">
             {image ? (
               <img
                 src={image}
@@ -49,6 +53,15 @@ function ProductCard({ product }) {
             ) : (
               <span className="text-sm text-[#9A9D96]">Product Image</span>
             )}
+            {isOutOfStock ? (
+              <span className="absolute top-3 left-3 rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+                Out of Stock
+              </span>
+            ) : stock <= 5 ? (
+              <span className="absolute top-3 left-3 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+                Only {stock} left
+              </span>
+            ) : null}
           </div>
         </Link>
 
@@ -75,13 +88,18 @@ function ProductCard({ product }) {
         <button
           type="button"
           onClick={handleAddToCart}
+          disabled={isOutOfStock}
           className={`w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-            added
+            isOutOfStock
+              ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+              : added
               ? "bg-emerald-600 text-white"
               : "bg-[#0F2C27] text-white hover:bg-[#123832]"
           }`}
         >
-          {added ? (
+          {isOutOfStock ? (
+            "Out of Stock"
+          ) : added ? (
             <>
               <Check size={16} />
               Added!
