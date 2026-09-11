@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Orders from "./pages/Orders";
+import Coupons from "./pages/Coupons";
 import Settings from "./pages/Settings";
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/products" element={<Products />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/coupons" element={<Coupons />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
