@@ -8,6 +8,7 @@ import Stores from './pages/Stores'
 import Products from './pages/Products'
 import ProductDetails from './pages/ProductDetails'
 import Scrolltop from './components/Scrolltop'
+import ProtectedRoute from './components/ProtectedRoute'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import OrderSuccess from './pages/OrderSuccess'
@@ -26,10 +27,14 @@ function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/order-success/:id" element={<OrderSuccess />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/orders/:id" element={<OrderDetails />} />
+
+            {/* Protected Customer Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-success/:id" element={<OrderSuccess />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/orders/:id" element={<OrderDetails />} />
+            </Route>
           </Route>
 
           <Route path="/login" element={<Login />} />
