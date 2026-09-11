@@ -101,6 +101,7 @@ function ProductDetails() {
         id: product._id,
         _id: product._id,
         storeId: storeId,
+        storeName: storeName,
         name: product.name,
         price: product.price,
         image: displayImage,

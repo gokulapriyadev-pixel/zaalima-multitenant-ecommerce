@@ -26,6 +26,7 @@ function ProductCard({ product }) {
         id: productId,
         _id: productId,
         storeId: storeId,
+        storeName: storeName,
         name: product.name,
         price: product.price,
         image: image,

@@ -1,15 +1,20 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-
 import {
-
   selectCartTotalItems,
   selectCartTotalPrice,
+  selectAppliedCoupon,
+  selectDiscountAmount,
+  selectFinalTotalPrice,
   increaseQuantity,
   decreaseQuantity,
   removeFromCart,
   selectCartItems,
+  applyCoupon,
+  removeCoupon,
 } from "../redux/cartSlice";
+import api from "../services/api";
 
 function Cart() {
   const dispatch = useDispatch();
@@ -17,6 +22,14 @@ function Cart() {
   const cartItems = useSelector(selectCartItems);
   const totalItems = useSelector(selectCartTotalItems);
   const totalPrice = useSelector(selectCartTotalPrice);
+  const appliedCoupon = useSelector(selectAppliedCoupon);
+  const discountAmount = useSelector(selectDiscountAmount);
+  const finalTotalPrice = useSelector(selectFinalTotalPrice);
+
+  const [couponCodeInput, setCouponCodeInput] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
+  const [couponSuccess, setCouponSuccess] = useState("");
 
   const handleIncrease = (id) => {
     dispatch(increaseQuantity(id));
@@ -30,12 +43,54 @@ function Cart() {
     dispatch(removeFromCart(id));
   };
 
+  const handleApplyCoupon = async (e) => {
+    e.preventDefault();
+    if (!couponCodeInput.trim()) return;
+
+    const targetStoreId = cartItems[0]?.storeId;
+    if (!targetStoreId) {
+      setCouponError("Unable to identify store for coupon validation.");
+      return;
+    }
+
+    try {
+      setCouponLoading(true);
+      setCouponError("");
+      setCouponSuccess("");
+
+      const res = await api.post("/coupons/validate", {
+        storeId: targetStoreId,
+        code: couponCodeInput.trim().toUpperCase(),
+      });
+
+      dispatch(
+        applyCoupon({
+          code: res.data.code,
+          discountType: res.data.discountType,
+          discountValue: res.data.discountValue,
+        })
+      );
+
+      setCouponSuccess(`Coupon "${res.data.code}" applied successfully!`);
+      setCouponCodeInput("");
+    } catch (err) {
+      setCouponError(err.response?.data?.message || "Invalid or expired coupon code.");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    dispatch(removeCoupon());
+    setCouponSuccess("");
+    setCouponError("");
+  };
+
   // Empty Cart
   if (cartItems.length === 0) {
     return (
       <main className="min-h-screen bg-gray-50 px-4 py-16">
         <div className="mx-auto max-w-3xl text-center">
-
           <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 shadow-sm">
             <h1 className="text-3xl font-bold text-gray-900">
               Your Cart is Empty
@@ -52,7 +107,6 @@ function Cart() {
               Continue Shopping
             </Link>
           </div>
-
         </div>
       </main>
     );
@@ -62,32 +116,54 @@ function Cart() {
     (item) => item.stock !== undefined && (item.stock <= 0 || item.quantity > item.stock)
   );
 
+  const uniqueStoreIds = [...new Set(cartItems.map((item) => item.storeId).filter(Boolean))];
+  const isMultiStoreConflict = uniqueStoreIds.length > 1;
+  const storeName = cartItems[0]?.storeName || "Store";
+
+  const isCheckoutDisabled = hasInventoryIssue || isMultiStoreConflict;
+
   return (
     <main className="min-h-screen bg-gray-50">
-
       {/* Header */}
       <section className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                Shopping Cart
+              </h1>
+              <p className="mt-1 text-sm text-gray-600">
+                {totalItems} {totalItems === 1 ? "item" : "items"} in your cart
+              </p>
+            </div>
 
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Shopping Cart
-          </h1>
-
-          <p className="mt-2 text-sm text-gray-600">
-            {totalItems} {totalItems === 1 ? "item" : "items"} in your cart
-          </p>
-
+            {!isMultiStoreConflict && cartItems[0]?.storeName && (
+              <div className="flex items-center gap-2 rounded-full bg-[#0F2C27]/5 border border-[#0F2C27]/20 px-4 py-1.5 text-xs font-semibold text-[#0F2C27] w-fit">
+                <span>Ordering from:</span>
+                <span className="font-bold text-[#B8892B]">{storeName}</span>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
+      {/* Multi-Store Conflict Banner */}
+      {isMultiStoreConflict && (
+        <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+          <div className="rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+            <p className="font-bold">Multi-Store Notice:</p>
+            <p className="mt-1">
+              Your cart contains items from multiple stores. Orders can only be placed from one store at a time. Please remove items from other stores before proceeding to checkout.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Cart Content */}
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-3">
-
           {/* Cart Items */}
           <div className="space-y-4 lg:col-span-2">
-
             {cartItems.map((item) => {
               const itemStock = item.stock !== undefined ? Number(item.stock) : Infinity;
               const isItemOutOfStock = itemStock <= 0;
@@ -104,9 +180,7 @@ function Cart() {
                       : "border-gray-200"
                   }`}
                 >
-
                   <div className="flex flex-col gap-5 sm:flex-row">
-
                     {/* Image */}
                     <div className="flex h-32 w-full shrink-0 items-center justify-center rounded-xl bg-gray-100 sm:w-32">
                       {item.image ? (
@@ -124,9 +198,13 @@ function Cart() {
 
                     {/* Details */}
                     <div className="flex flex-1 flex-col justify-between">
-
                       <div>
-                        <h2 className="font-semibold text-gray-900">
+                        {item.storeName && (
+                          <p className="text-xs font-semibold uppercase tracking-wider text-[#B8892B]">
+                            {item.storeName}
+                          </p>
+                        )}
+                        <h2 className="font-semibold text-gray-900 mt-0.5">
                           {item.name}
                         </h2>
 
@@ -147,10 +225,8 @@ function Cart() {
                       </div>
 
                       <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-
                         {/* Quantity */}
                         <div className="flex items-center overflow-hidden rounded-lg border border-gray-300">
-
                           <button
                             type="button"
                             onClick={() => handleDecrease(item.id)}
@@ -172,7 +248,6 @@ function Cart() {
                           >
                             +
                           </button>
-
                         </div>
 
                         {/* Remove */}
@@ -183,9 +258,7 @@ function Cart() {
                         >
                           Remove
                         </button>
-
                       </div>
-
                     </div>
 
                     {/* Item Total */}
@@ -201,18 +274,14 @@ function Cart() {
                         )}
                       </p>
                     </div>
-
                   </div>
-
                 </div>
               );
             })}
-
           </div>
 
-          {/* Summary */}
+          {/* Summary Sidebar */}
           <div className="h-fit rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-
             <h2 className="text-xl font-bold text-gray-900">
               Order Summary
             </h2>
@@ -223,13 +292,59 @@ function Cart() {
               </div>
             )}
 
-            <div className="mt-6 space-y-4">
+            {/* Coupon Code Box */}
+            <div className="mt-6 rounded-xl border border-gray-100 bg-[#FAFAF7] p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">
+                Coupon Code
+              </p>
 
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between rounded-lg bg-emerald-50 border border-emerald-200 p-2.5 text-xs text-emerald-800">
+                  <div>
+                    <span className="font-bold">{appliedCoupon.code}</span>
+                    <span className="ml-1 text-emerald-700">
+                      ({appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}% OFF` : `₹${appliedCoupon.discountValue} OFF`})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="font-bold text-red-600 hover:text-red-800 ml-2"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter coupon code"
+                    value={couponCodeInput}
+                    onChange={(e) => {
+                      setCouponCodeInput(e.target.value.toUpperCase());
+                      setCouponError("");
+                    }}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs uppercase placeholder:normal-case focus:border-black focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={couponLoading || !couponCodeInput.trim()}
+                    className="shrink-0 rounded-lg bg-[#0F2C27] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#123832] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {couponLoading ? "..." : "Apply"}
+                  </button>
+                </form>
+              )}
+
+              {couponError && <p className="mt-2 text-xs text-red-600 font-medium">{couponError}</p>}
+              {couponSuccess && <p className="mt-2 text-xs text-emerald-600 font-medium">{couponSuccess}</p>}
+            </div>
+
+            <div className="mt-6 space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">
                   Items
                 </span>
-
                 <span className="font-medium text-gray-900">
                   {totalItems}
                 </span>
@@ -239,17 +354,26 @@ function Cart() {
                 <span className="text-gray-600">
                   Subtotal
                 </span>
-
                 <span className="font-medium text-gray-900">
                   ₹{totalPrice.toLocaleString("en-IN")}
                 </span>
               </div>
 
+              {appliedCoupon && discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-emerald-700">
+                  <span className="font-medium">
+                    Discount ({appliedCoupon.code})
+                  </span>
+                  <span className="font-semibold">
+                    -₹{discountAmount.toLocaleString("en-IN")}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">
                   Shipping
                 </span>
-
                 <span className="font-medium text-green-600">
                   Free
                 </span>
@@ -260,16 +384,14 @@ function Cart() {
                   <span className="font-semibold text-gray-900">
                     Total
                   </span>
-
                   <span className="text-xl font-bold text-gray-900">
-                    ₹{totalPrice.toLocaleString("en-IN")}
+                    ₹{finalTotalPrice.toLocaleString("en-IN")}
                   </span>
                 </div>
               </div>
-
             </div>
 
-            {hasInventoryIssue ? (
+            {isCheckoutDisabled ? (
               <button
                 type="button"
                 disabled
@@ -280,7 +402,7 @@ function Cart() {
             ) : (
               <Link
                 to="/checkout"
-                className="mt-6 block w-full rounded-lg bg-black px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-gray-800"
+                className="mt-6 block w-full rounded-lg bg-[#0F2C27] px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#123832]"
               >
                 Proceed to Checkout
               </Link>
@@ -292,13 +414,9 @@ function Cart() {
             >
               Continue Shopping
             </Link>
-
           </div>
-
         </div>
-
       </section>
-
     </main>
   );
 }
