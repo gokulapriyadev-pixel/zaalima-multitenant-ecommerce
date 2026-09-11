@@ -61,15 +61,47 @@ function Register() {
       localStorage.setItem('vendorToken', response.data.token);
       localStorage.setItem('vendorInfo', JSON.stringify(response.data));
 
+      // 3. Automatically create the vendor's initial Store
+      const baseSlug = storeName
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || `store-${Date.now()}`;
+
+      try {
+        await api.post('/stores', {
+          name: storeName,
+          slug: baseSlug,
+          contactEmail: email,
+          description: `Welcome to ${storeName} on Zaalima Marketplace.`,
+        }, {
+          headers: { Authorization: `Bearer ${response.data.token}` }
+        });
+      } catch (storeErr) {
+        // If slug collision occurs, retry with numeric suffix
+        try {
+          const fallbackSlug = `${baseSlug}-${Math.floor(100 + Math.random() * 900)}`;
+          await api.post('/stores', {
+            name: storeName,
+            slug: fallbackSlug,
+            contactEmail: email,
+            description: `Welcome to ${storeName} on Zaalima Marketplace.`,
+          }, {
+            headers: { Authorization: `Bearer ${response.data.token}` }
+          });
+        } catch (retryErr) {
+          console.warn("Store setup note:", retryErr.response?.data?.message || retryErr.message);
+        }
+      }
+
       setLoading(false);
       setSuccess(true);
 
-      // 3. Send them to the dashboard automatically after a brief pause
-      setTimeout(() => navigate('/dashboard'), 2000);
+      // 4. Send them to the dashboard automatically after a brief pause
+      setTimeout(() => navigate('/dashboard'), 1500);
 
     } catch (error) {
       setLoading(false);
-      // Grab the specific error message your Express backend threw
       setApiError(error.response?.data?.message || "Registration failed. Please try again.");
     }
   };

@@ -4,6 +4,10 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
+import Orders from "./pages/Orders";
+import Coupons from "./pages/Coupons";
+import Settings from "./pages/Settings";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -32,8 +36,15 @@ function App() {
             </Layout>
           }
         />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/products" element={<Products />} />
+
+        {/* Protected Vendor Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/coupons" element={<Coupons />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

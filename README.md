@@ -1,52 +1,61 @@
-<<<<<<< HEAD
 # Zaalima Multitenant E-Commerce
 
-A multi-tenant e-commerce application with a Node.js/Express backend, MongoDB database, Razorpay payments, and transactional email support.
+A multi-tenant e-commerce platform featuring a Node.js/Express backend, MongoDB database, customer marketplace frontend, and vendor dashboard.
 
-## Backend Setup
+## Architecture
 
-### Requirements
+- **`backend/`**: Node.js & Express REST API with Mongoose, JWT authentication, Razorpay payments, and Cloudinary uploads.
+- **`customer-side-frontend/`**: React + Vite + Tailwind CSS customer marketplace for browsing stores, purchasing products, cart management, and Razorpay checkout.
+- **`frontend-vendor/`**: React + Vite + Tailwind CSS vendor dashboard for managing stores, products, orders, and analytics.
 
-- Node.js 24+
-- npm
-- MongoDB
-- Razorpay Test Mode account
-- SMTP email account
+## Quick Start
 
-### Install Backend Dependencies
+### 1. Backend Setup
 
 ```bash
 cd backend
 npm install
+```
 
-### Environment Configuration
-
-Create a `.env` file inside the `backend` directory.
-
-Required environment variables:
+Create a `.env` file in the `backend` directory using `.env.example`:
 
 ```env
 PORT=5000
+NODE_ENV=development
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
 
-MONGO_URI=
+# Payments (Razorpay)
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 
-RAZORPAY_KEY_ID=
-RAZORPAY_KEY_SECRET=
+# Transactional Email (Resend)
+RESEND_API_KEY=your_resend_api_key
+EMAIL_FROM=onboarding@resend.dev
 
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=
-EMAIL_PASSWORD=
-EMAIL_FROM=
-
-JWT_SECRET=
-
-RAZORPAY_WEBHOOK_SECRET=
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_cloudinary_key
+CLOUDINARY_API_SECRET=your_cloudinary_secret
 ```
 
-Do not commit the `.env` file or expose real credentials.
+Start the backend:
+```bash
+npm run dev
+```
 
-Use `.env.example` as the template for the required environment variables.
-=======
-# zaalima-multitenant-ecommerce
->>>>>>> origin/main
+### 2. Customer Frontend Setup
+
+```bash
+cd customer-side-frontend
+npm install
+npm run dev
+```
+
+### 3. Vendor Dashboard Setup
+
+```bash
+cd frontend-vendor
+npm install
+npm run dev
+```
