@@ -9,6 +9,13 @@ import Coupons from "./pages/Coupons";
 import Settings from "./pages/Settings";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// Super Admin Suite
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminStores from "./pages/admin/AdminStores";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminOrders from "./pages/admin/AdminOrders";
+
 function App() {
   return (
     <BrowserRouter>
@@ -44,6 +51,15 @@ function App() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/coupons" element={<Coupons />} />
           <Route path="/settings" element={<Settings />} />
+        </Route>
+
+        {/* Protected Super Admin Routes */}
+        <Route element={<AdminProtectedRoute />}>
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/stores" element={<AdminStores />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
         </Route>
       </Routes>
     </BrowserRouter>
