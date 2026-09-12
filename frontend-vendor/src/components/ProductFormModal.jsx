@@ -1,15 +1,39 @@
 import { useState, useEffect } from 'react';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import api from '../services/api';
 
-function ProductFormModal({ isOpen, onClose, onSave, initialData }) {
+function ProductFormModal({ isOpen, onClose, onSave, initialData, storeId }) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [inventoryCount, setInventoryCount] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categories, setCategories] = useState([]);
   const [isPublished, setIsPublished] = useState(true);
   const [error, setError] = useState('');
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const res = await api.get('/categories');
+        setCategories(res.data.categories || []);
+      } catch (err) {
+        console.warn('Could not fetch categories for modal:', err);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
@@ -24,6 +48,7 @@ function ProductFormModal({ isOpen, onClose, onSave, initialData }) {
       );
       setDescription(initialData.description || '');
       setImageUrl(initialData.images?.[0] || initialData.image || '');
+      setCategoryId(initialData.categoryId?._id || initialData.categoryId || '');
       setIsPublished(initialData.isPublished !== false);
     } else {
       setName('');
@@ -31,14 +56,17 @@ function ProductFormModal({ isOpen, onClose, onSave, initialData }) {
       setInventoryCount('');
       setDescription('');
       setImageUrl('');
+      setCategoryId('');
       setIsPublished(true);
     }
+    setIsCreatingNewCategory(false);
+    setNewCategoryName('');
     setError('');
   }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
       setError('Product name is required');
@@ -51,6 +79,32 @@ function ProductFormModal({ isOpen, onClose, onSave, initialData }) {
     if (!description.trim()) {
       setError('Product description is required');
       return;
+    }
+
+    let finalCategoryId = categoryId || undefined;
+
+    // Handle creating a new category inline if vendor typed one
+    if (isCreatingNewCategory && newCategoryName.trim()) {
+      try {
+        const cleanCatSlug = newCategoryName
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '') || `category-${Date.now()}`;
+
+        const catRes = await api.post('/categories', {
+          storeId: storeId || initialData?.storeId,
+          name: newCategoryName.trim(),
+          slug: cleanCatSlug,
+        });
+
+        if (catRes.data?.category?._id) {
+          finalCategoryId = catRes.data.category._id;
+        }
+      } catch (catErr) {
+        setError(catErr.response?.data?.message || 'Failed to create new category');
+        return;
+      }
     }
 
     const cleanSlug = name
@@ -68,6 +122,7 @@ function ProductFormModal({ isOpen, onClose, onSave, initialData }) {
       price: Number(price),
       inventoryCount: Number(inventoryCount || 0),
       description: description.trim(),
+      categoryId: finalCategoryId,
       images: imagesArray,
       isPublished,
     });
@@ -114,6 +169,51 @@ function ProductFormModal({ isOpen, onClose, onSave, initialData }) {
               value={inventoryCount}
               onChange={(e) => setInventoryCount(e.target.value)}
             />
+          </div>
+
+          {/* Category Dropdown */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Product Category
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreatingNewCategory(!isCreatingNewCategory);
+                  if (!isCreatingNewCategory) setCategoryId('');
+                }}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+              >
+                {isCreatingNewCategory ? '← Choose from existing' : '+ Add new category'}
+              </button>
+            </div>
+
+            {isCreatingNewCategory ? (
+              <input
+                type="text"
+                placeholder="Enter new category name (e.g. Electronics)"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className="w-full border border-blue-400 rounded-lg px-3 py-2 text-sm focus:border-blue-600 focus:outline-none bg-blue-50/20"
+              />
+            ) : (
+              <select
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none bg-white"
+              >
+                <option value="">-- Select Category (Optional) --</option>
+                {categories.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            {loadingCategories && (
+              <p className="text-[11px] text-gray-400 mt-1">Loading categories...</p>
+            )}
           </div>
 
           <div>

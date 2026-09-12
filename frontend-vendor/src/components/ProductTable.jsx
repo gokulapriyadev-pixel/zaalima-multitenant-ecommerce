@@ -45,7 +45,14 @@ function ProductTable({ products, onEdit, onDelete }) {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-gray-800">{p.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-800">{p.name}</p>
+                      {p.categoryId?.name && (
+                        <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">
+                          {p.categoryId.name}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400 truncate max-w-xs">{p.description || p.slug}</p>
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-800">

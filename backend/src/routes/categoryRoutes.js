@@ -6,12 +6,18 @@ const {
   getMyCategories,
   getCategoryById,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  getPublicStoreCategories,
+  getAllPublicCategories
 } = require('../controllers/categoryController');
 
 const { protect } = require('../middlewares/authMiddleware');
 
-// Get all categories
+// Public Category Routes
+router.get('/public', getAllPublicCategories);
+router.get('/public/:storeId', getPublicStoreCategories);
+
+// Get all categories (Vendor)
 router.get('/', protect, getMyCategories);
 
 // Create category

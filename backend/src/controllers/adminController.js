@@ -68,8 +68,76 @@ const toggleStoreStatus = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Get all users across the platform with filtering and search
+ * @route   GET /api/admin/users
+ * @access  Private (Super Admin only)
+ */
+const getAllUsers = asyncHandler(async (req, res) => {
+  const { role, search } = req.query;
+
+  const query = {};
+
+  if (role && role !== 'all') {
+    query.role = role;
+  }
+
+  if (search && search.trim()) {
+    query.$or = [
+      { name: { $regex: search.trim(), $options: 'i' } },
+      { email: { $regex: search.trim(), $options: 'i' } }
+    ];
+  }
+
+  const users = await User.find(query)
+    .select('-password')
+    .sort({ createdAt: -1 });
+
+  res.json({
+    count: users.length,
+    users
+  });
+});
+
+/**
+ * @desc    Get all orders across the entire platform
+ * @route   GET /api/admin/orders
+ * @access  Private (Super Admin only)
+ */
+const getAllOrders = asyncHandler(async (req, res) => {
+  const { status, search } = req.query;
+
+  const query = {};
+
+  if (status && status !== 'all') {
+    query.orderStatus = status;
+  }
+
+  let orders = await Order.find(query)
+    .populate('customerId', 'name email')
+    .populate('storeId', 'name slug')
+    .sort({ createdAt: -1 });
+
+  if (search && search.trim()) {
+    const term = search.trim().toLowerCase();
+    orders = orders.filter(order => 
+      order._id.toString().includes(term) ||
+      (order.customerId?.name && order.customerId.name.toLowerCase().includes(term)) ||
+      (order.customerId?.email && order.customerId.email.toLowerCase().includes(term)) ||
+      (order.storeId?.name && order.storeId.name.toLowerCase().includes(term))
+    );
+  }
+
+  res.json({
+    count: orders.length,
+    orders
+  });
+});
+
 module.exports = {
   getPlatformAnalytics,
   getAllStores,
-  toggleStoreStatus
+  toggleStoreStatus,
+  getAllUsers,
+  getAllOrders
 };

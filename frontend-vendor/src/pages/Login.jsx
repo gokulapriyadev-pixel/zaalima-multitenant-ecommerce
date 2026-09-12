@@ -42,10 +42,10 @@ function Login() {
 
     try {
       const response = await api.post('/auth/login', { email, password });
-      
+
       // Guardrail: Kick out standard customers
       if (response.data.role === 'customer') {
-        setApiError("Access denied. Customers cannot log into the vendor dashboard.");
+        setApiError("Access denied. Customers cannot log into this portal.");
         setLoading(false);
         return;
       }
@@ -55,8 +55,15 @@ function Login() {
 
       setLoading(false);
       setSuccess(true);
-      
-      setTimeout(() => navigate('/dashboard'), 1000);
+
+      const isSuperAdmin = response.data.role === 'super_admin' || response.data.role === 'superadmin';
+      setTimeout(() => {
+        if (isSuperAdmin) {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      }, 1000);
 
     } catch (error) {
       setLoading(false);
@@ -78,7 +85,7 @@ function Login() {
   }
 
   return (
-    <AuthCard title="Vendor Login">
+    <AuthCard title="Merchant Login">
       {apiError && (
         <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-200">
           {apiError}
