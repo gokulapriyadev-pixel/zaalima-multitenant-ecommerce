@@ -58,9 +58,14 @@ const getStoreCoupons = asyncHandler(async (req, res) => {
 const validateCoupon = asyncHandler(async (req, res) => {
     const { storeId, code } = req.body;
 
+    if (!storeId || !code || !code.trim()) {
+        res.status(400);
+        throw new Error('Store ID and Coupon code are required.');
+    }
+
     const coupon = await Coupon.findOne({ 
         storeId, 
-        code: code.toUpperCase(), 
+        code: code.trim().toUpperCase(), 
         isActive: true 
     });
 
@@ -70,7 +75,7 @@ const validateCoupon = asyncHandler(async (req, res) => {
     }
 
     const now = new Date();
-    if (new Date(coupon.expiryDate) < now) {
+    if (coupon.expiryDate && new Date(coupon.expiryDate) < now) {
         res.status(400);
         throw new Error('This coupon has expired.');
     }
@@ -88,8 +93,59 @@ const validateCoupon = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * @desc    Delete a coupon
+ * @route   DELETE /api/coupons/:id
+ * @access  Private (Vendor only)
+ */
+const deleteCoupon = asyncHandler(async (req, res) => {
+    const store = await Store.findOne({ ownerId: req.user._id });
+    if (!store) {
+        res.status(404);
+        throw new Error('Store not found.');
+    }
+
+    const coupon = await Coupon.findOne({ _id: req.params.id, storeId: store._id });
+    if (!coupon) {
+        res.status(404);
+        throw new Error('Coupon not found for this store.');
+    }
+
+    await Coupon.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Coupon deleted successfully' });
+});
+
+/**
+ * @desc    Toggle coupon active status
+ * @route   PATCH /api/coupons/:id/toggle
+ * @access  Private (Vendor only)
+ */
+const toggleCouponStatus = asyncHandler(async (req, res) => {
+    const store = await Store.findOne({ ownerId: req.user._id });
+    if (!store) {
+        res.status(404);
+        throw new Error('Store not found.');
+    }
+
+    const coupon = await Coupon.findOne({ _id: req.params.id, storeId: store._id });
+    if (!coupon) {
+        res.status(404);
+        throw new Error('Coupon not found for this store.');
+    }
+
+    coupon.isActive = !coupon.isActive;
+    await coupon.save();
+
+    res.json({
+        message: `Coupon ${coupon.isActive ? 'activated' : 'deactivated'} successfully`,
+        coupon
+    });
+});
+
 module.exports = {
     createCoupon,
     getStoreCoupons,
-    validateCoupon
+    validateCoupon,
+    deleteCoupon,
+    toggleCouponStatus
 };

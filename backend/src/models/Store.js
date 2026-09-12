@@ -29,11 +29,13 @@ const storeSchema = new mongoose.Schema({
   contactEmail: { 
     type: String 
   },
-    isActive: { 
+  isActive: { 
     type: Boolean, 
     default: true 
   },
-
+  stripeAccountId: { 
+    type: String 
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Store', storeSchema);

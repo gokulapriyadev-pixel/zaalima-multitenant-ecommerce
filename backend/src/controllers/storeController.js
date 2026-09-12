@@ -167,11 +167,11 @@ const getStoreBySlug = asyncHandler(async (req, res) => {
 // ==========================================
 
 const updateStore = asyncHandler(async (req, res) => {
+  const query = req.params.id
+    ? (req.user.role === 'super_admin' ? { _id: req.params.id } : { _id: req.params.id, ownerId: req.user._id })
+    : { ownerId: req.user._id };
 
-  const store = await Store.findOne({
-    _id: req.params.id,
-    ownerId: req.user._id
-  });
+  const store = await Store.findOne(query);
 
   if (!store) {
     res.status(404);
@@ -245,11 +245,11 @@ const updateStore = asyncHandler(async (req, res) => {
 // ==========================================
 
 const deleteStore = asyncHandler(async (req, res) => {
+  const query = req.params.id
+    ? (req.user.role === 'super_admin' ? { _id: req.params.id } : { _id: req.params.id, ownerId: req.user._id })
+    : { ownerId: req.user._id };
 
-  const store = await Store.findOne({
-    _id: req.params.id,
-    ownerId: req.user._id
-  });
+  const store = await Store.findOne(query);
 
   if (!store) {
     res.status(404);

@@ -25,7 +25,10 @@ connectDB();
 app.use(helmet());
 // Enable CORS for frontend communication
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:5173',// Customer Frontend
+    process.env.VENDOR_URL || 'http://localhost:5174'    // Vendor Dashboard
+  ],
   credentials: true
 }));
 // Parse incoming JSON payloads
