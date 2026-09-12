@@ -193,10 +193,58 @@ const deleteCategory = asyncHandler(async (req, res) => {
 });
 
 
+// ==========================================
+// GET PUBLIC STORE CATEGORIES
+// GET /api/categories/public/:storeId
+// Access: Public
+// ==========================================
+const getPublicStoreCategories = asyncHandler(async (req, res) => {
+  const { storeId } = req.params;
+
+  if (!storeId) {
+    res.status(400);
+    throw new Error('Store ID is required');
+  }
+
+  const categories = await Category.find({ storeId })
+    .select('name slug storeId _id')
+    .sort({ name: 1 });
+
+  res.status(200).json({
+    status: 'success',
+    count: categories.length,
+    categories
+  });
+});
+
+
+// ==========================================
+// GET ALL PUBLIC CATEGORIES
+// GET /api/categories/public
+// Access: Public
+// ==========================================
+const getAllPublicCategories = asyncHandler(async (req, res) => {
+  const filter = req.query.storeId ? { storeId: req.query.storeId } : {};
+
+  const categories = await Category.find(filter)
+    .select('name slug storeId _id')
+    .populate('storeId', 'name slug')
+    .sort({ name: 1 });
+
+  res.status(200).json({
+    status: 'success',
+    count: categories.length,
+    categories
+  });
+});
+
+
 module.exports = {
   createCategory,
   getMyCategories,
   getCategoryById,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  getPublicStoreCategories,
+  getAllPublicCategories
 };

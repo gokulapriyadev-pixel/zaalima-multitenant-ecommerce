@@ -138,6 +138,7 @@ function Products() {
         }}
         onSave={handleSave}
         initialData={selectedProduct}
+        storeId={store?._id}
       />
     </div>
   );
