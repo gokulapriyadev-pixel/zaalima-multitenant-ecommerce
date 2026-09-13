@@ -17,15 +17,7 @@ A multi-tenant e-commerce application with a Node.js/Express backend, MongoDB da
 ```bash
 cd backend
 npm install
-``r
 
-### Environment Configuration
-
-Create a `.env` file inside the `backend` directory.
-
-Required environment variables:
-
-```env
 PORT=5000
 
 MONGO_URI=
@@ -40,11 +32,4 @@ EMAIL_PASSWORD=
 EMAIL_FROM=
 
 JWT_SECRET=
-
 RAZORPAY_WEBHOOK_SECRET=
-```
-
-Do not commit the `.env` file or expose real credentials.
-
-Use `.env.example` as the template for the required environment variables.
-
