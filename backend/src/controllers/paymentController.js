@@ -85,9 +85,17 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
 order.paymentStatus = 'paid';
 await order.save();
 
-await sendPaymentSuccessEmail(order.customerId.email, order);
+try {
+  await sendPaymentSuccessEmail(order.customerId.email, order);
+  console.log('Payment confirmation email sent successfully');
+} catch (emailError) {
+  console.error(
+    'Payment verified, but confirmation email failed:',
+    emailError.message
+  );
+}
 
-  res.status(200).json({
+res.status(200).json({
     status: 'success',
     message: 'Payment verified successfully',
     orderId: order._id,

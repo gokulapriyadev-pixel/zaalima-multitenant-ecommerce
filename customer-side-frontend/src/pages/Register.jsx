@@ -1,18 +1,20 @@
-import { login } from "../redux/authSlice";
+
 import { CircleAlert } from "lucide-react";
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import api from "../services/api";
+import { login } from "../redux/authSlice";
+import { registerUser } from "../services/api";
 
 function Register() {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
 
   const [error, setError] = useState("");
   const [serverError, setServerError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -27,64 +29,72 @@ function Register() {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setServerError("");
+  e.preventDefault();
 
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError("Please fill in all fields.");
-      return;
-    }
+  setError("");
+  setServerError("");
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
+  if (
+    !formData.name ||
+    !formData.email ||
+    !formData.password ||
+    !formData.confirmPassword
+  ) {
+    setError("Please fill in all fields.");
+    return;
+  }
 
+  if (formData.password.length < 6) {
+    setError("Password must be at least 6 characters.");
+    return;
+  }
 
-    setError("");
-    setIsSubmitting(true);
+  if (formData.password !== formData.confirmPassword) {
+    setError("Passwords do not match.");
+    return;
+  }
 
-    try {
-      // 4. Hit the backend
-      const response = await api.post('/auth/register', {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        role: 'customer'
-      });
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      // 5. Save to local storage
-      localStorage.setItem('customerToken', response.data.token);
-      localStorage.setItem('customerInfo', JSON.stringify(response.data));
+  if (!emailRegex.test(formData.email)) {
+    setError("Please enter a valid email address.");
+    return;
+  }
 
-      // 6. TELL REDUX YOU ARE LOGGED IN
-      dispatch(login({
-        user: response.data,
-        token: response.data.token
-      }));
+  setError("");
+  setIsSubmitting(true);
 
-      setIsSubmitting(false);
-      navigate('/');
+  try {
+    const data = await registerUser(
+      formData.name,
+      formData.email,
+      formData.password
+    );
 
-    } catch (error) {
-      setIsSubmitting(false);
-      setServerError(error.response?.data?.message || "Registration failed.");
-    }
-  };
+    dispatch(
+      login({
+        user: {
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+        },
+        token: data.token,
+      })
+    );
+
+    navigate("/");
+  } catch (error) {
+    setServerError(error.message || "Registration failed.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <main className="flex min-h-[calc(100vh-64px)] bg-gray-50 ">
       {/* left side */}
-      <div className="relative hidden w-1/2 items-center overflow-hidden bg-linear-to-br from-[#0B1F1C] via-[#0F2C27] to-black lg:flex">
+      <div className="relative hidden w-1/2 items-center overflow-hidden bg-gradient-to-br from-[#0B1F1C] via-[#0F2C27] to-black lg:flex">
         {/* decorative circles */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-[#C9A227]/10" />
@@ -232,10 +242,9 @@ function Register() {
               {/* Register Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full cursor-pointer rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.99] cursor-pointer6"
               >
-                {isSubmitting ? "Creating Account..." : "Create Account"}
+                Create Account
               </button>
 
             </form>

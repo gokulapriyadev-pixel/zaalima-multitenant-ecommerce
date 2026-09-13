@@ -45,7 +45,12 @@ app.use(express.urlencoded({ extended: true }));
 // ==========================================
 // Health check route to ensure API is running
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'success', message: 'SaaS E-commerce API is running!' });
+  res.status(200).json({
+    status: 'success',
+    message: 'SaaS E-commerce API is running!',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
 });
 
 // Future Route Imports will go here:

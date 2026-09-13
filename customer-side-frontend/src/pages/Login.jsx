@@ -1,13 +1,14 @@
-import { login } from "../redux/authSlice";
 import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import api from "../services/api";
+
+import { login } from "../redux/authSlice";
+import { loginUser } from "../services/api";
 
 function Login() {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -38,59 +39,55 @@ function Login() {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setServerError("");
+  e.preventDefault();
 
-    if (!formData.email || !formData.password) {
-      setError("Please fill in both fields.");
-      return;
-    }
+  setError("");
+  setServerError("");
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
+  if (!formData.email || !formData.password) {
+    setError("Please fill in both fields.");
+    return;
+  }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    setError("");
+  if (!emailRegex.test(formData.email)) {
+    setError("Please enter a valid email address.");
+    return;
+  }
+
+  if (formData.password.length < 6) {
+    setError("Password must be at least 6 characters.");
+    return;
+  }
+
+  try {
     setIsSubmitting(true);
 
-    try {
-      // 4. Hit the backend
-      const response = await api.post('/auth/login', { 
-        email: formData.email, 
-        password: formData.password 
-      });
-      
-      if (response.data.role !== 'customer') {
-        setServerError("Access denied. Please use the appropriate portal.");
-        setIsSubmitting(false);
-        return;
-      }
+    const data = await loginUser(
+      formData.email,
+      formData.password
+    );
 
-      // 5. Save to local storage
-      localStorage.setItem('customerToken', response.data.token);
-      localStorage.setItem('customerInfo', JSON.stringify(response.data));
+    dispatch(
+      login({
+        user: {
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+        },
+        token: data.token,
+      })
+    );
 
-      // 6. TELL REDUX YOU ARE LOGGED IN
-      dispatch(login({
-        user: response.data,
-        token: response.data.token
-      }));
-
-      setIsSubmitting(false);
-      navigate('/'); 
-      
-    } catch (error) {
-      setIsSubmitting(false);
-      setServerError(error.response?.data?.message || "Invalid email or password.");
-    }
-  };
+    navigate("/");
+  } catch (err) {
+    setServerError(err.message || "Login failed. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
 

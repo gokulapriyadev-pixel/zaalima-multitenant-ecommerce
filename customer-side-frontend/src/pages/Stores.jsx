@@ -1,28 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, X } from "lucide-react";
-import api from "../services/api";
+import { getPublicStores } from "../services/api";
 
 function Stores() {
-  const [stores, setStores] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const { data } = await api.get('/stores/public');
-        setStores(data.stores || []);
-      } catch (err) {
-        console.error("Failed to load stores", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStores();
-  }, []);
-
   const CATEGORIES = [
     { value: "all", label: "All Categories" },
     { value: "Fashion", label: "Fashion" },
@@ -42,40 +22,82 @@ function Stores() {
     Books: "#7A6A8C",
   };
 
-  // Filter stores based on category and live search term
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [stores, setStores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getPublicStores();
+
+        setStores(data.stores || []);
+      } catch (err) {
+        console.error("Failed to load stores:", err);
+        setError(err.message || "Unable to load stores");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStores();
+  }, []);
+
   const filteredStores = useMemo(() => {
-    return stores.filter((store) => {
-      // Category filter
-      if (selectedCategory !== "all" && store.category !== selectedCategory) {
-        return false;
-      }
+    if (selectedCategory === "all") {
+      return stores;
+    }
 
-      // Search term filter
-      if (searchTerm.trim()) {
-        const term = searchTerm.toLowerCase().trim();
-        const nameMatch = store.name?.toLowerCase().includes(term);
-        const descMatch = store.description?.toLowerCase().includes(term);
-        const slugMatch = store.slug?.toLowerCase().includes(term);
+    return stores.filter(
+      (store) => store.category === selectedCategory
+    );
+  }, [selectedCategory, stores]);
 
-        if (!nameMatch && !descMatch && !slugMatch) {
-          return false;
-        }
-      }
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FAFAF7]">
+        <p className="text-[#6B6F6D]">
+          Loading stores...
+        </p>
+      </main>
+    );
+  }
 
-      return true;
-    });
-  }, [selectedCategory, stores, searchTerm]);
+  if (error) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FAFAF7] px-4">
+        <div className="text-center">
+          <h1 className="font-serif text-3xl text-[#14201C]">
+            Unable to load stores
+          </h1>
 
-  const handleResetFilters = () => {
-    setSelectedCategory("all");
-    setSearchTerm("");
-  };
+          <p className="mt-3 text-sm text-[#6B6F6D]">
+            {error}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-6 rounded-lg bg-[#0F2C27] px-6 py-3 text-sm font-semibold text-white hover:bg-[#123832]"
+          >
+            Try Again
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#FAFAF7]">
-      {/* Header Banner */}
+
+      {/* Page Header */}
       <section className="border-b border-[#E4E1D9] bg-white">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+
           <p className="text-sm font-semibold uppercase tracking-wider text-[#B8892B]">
             Explore
           </p>
@@ -84,159 +106,131 @@ function Stores() {
             Discover Stores
           </h1>
 
-          <p className="mt-3 max-w-2xl text-sm text-[#6B6F6D]">
+          <p className="mt-4 max-w-2xl text-[#6B6F6D]">
             Explore different stores and discover products from vendors
             across the Zaalima marketplace.
           </p>
+
         </div>
       </section>
 
-      {/* Stores Section */}
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        {/* Search & Filter Controls */}
+      {/* Stores */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+
+        {/* Filter */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          {/* Live Search Input */}
-          <div className="relative flex-1 max-w-md flex items-center">
-            <Search size={17} className="absolute left-3.5 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search stores by name, keyword, or slug..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-[#E4E1D9] bg-white pl-10 pr-10 py-2.5 text-sm text-[#14201C] outline-none transition focus:border-[#B8892B] focus:ring-2 focus:ring-[#B8892B]/20"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3.5 text-gray-400 hover:text-gray-600"
-                title="Clear search"
+
+          <p className="text-sm text-[#6B6F6D]">
+            Showing{" "}
+            <span className="font-semibold text-[#14201C]">
+              {filteredStores.length}
+            </span>{" "}
+            {filteredStores.length === 1 ? "store" : "stores"}
+          </p>
+
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="rounded-lg border border-[#E4E1D9] bg-white px-4 py-2.5 text-sm text-[#14201C] outline-none transition focus:border-[#B8892B] focus:ring-2 focus:ring-[#B8892B]/30"
+          >
+            {CATEGORIES.map((category) => (
+              <option
+                key={category.value}
+                value={category.value}
               >
-                <X size={15} />
-              </button>
-            )}
-          </div>
+                {category.label}
+              </option>
+            ))}
+          </select>
 
-          <div className="flex items-center gap-4">
-            <p className="text-xs text-[#6B6F6D]">
-              Showing <strong className="text-[#14201C]">{filteredStores.length}</strong> {filteredStores.length === 1 ? "store" : "stores"}
-            </p>
-
-            {/* Category Dropdown */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="rounded-xl border border-[#E4E1D9] bg-white px-4 py-2.5 text-xs font-semibold text-[#14201C] outline-none transition focus:border-[#B8892B] focus:ring-2 focus:ring-[#B8892B]/20"
-            >
-              {CATEGORIES.map((category) => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* Store Grid */}
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#0F2C27] border-t-transparent"></div>
-          </div>
-        ) : filteredStores.length === 0 ? (
+        {filteredStores.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#E4E1D9] bg-white px-6 py-16 text-center">
-            <p className="text-base font-semibold text-[#14201C]">
-              No stores found
+
+            <p className="text-sm font-medium text-[#14201C]">
+              No stores found.
             </p>
-            <p className="mt-1.5 text-sm text-[#6B6F6D]">
-              {searchTerm
-                ? `No stores matched your search "${searchTerm}".`
-                : "No stores found in this category."}
+
+            <p className="mt-1 text-sm text-[#6B6F6D]">
+              Try selecting a different category.
             </p>
-            {(searchTerm || selectedCategory !== "all") && (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="mt-4 rounded-lg bg-[#0F2C27] px-4 py-2 text-xs font-semibold text-white hover:bg-[#123832] transition"
-              >
-                Reset Filters
-              </button>
-            )}
+
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
             {filteredStores.map((store) => {
-              const storeId = store._id || store.id;
+              const categoryColor =
+                CATEGORY_COLORS[store.category] || "#6B6F6D";
 
               return (
                 <div
-                  key={storeId}
-                  className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-[#E4E1D9] bg-white transition hover:-translate-y-1 hover:border-[#B8892B]/40 hover:shadow-md"
+                  key={store._id}
+                  className="overflow-hidden rounded-2xl border border-[#E4E1D9] bg-white transition hover:-translate-y-1 hover:border-[#B8892B]/40 hover:shadow-md"
                 >
-                  <div>
-                    {/* Store Logo Banner */}
-                    <div className="relative flex h-48 items-center justify-center overflow-hidden bg-[#FAFAF7]">
-                      {store.logoUrl ? (
-                        <img
-                          src={store.logoUrl}
-                          alt={store.name}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-[#9A9D96]">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#E4E1D9]">
-                            <span className="font-serif text-lg font-bold text-[#14201C]">
-                              {store.name.charAt(0)}
-                            </span>
-                          </div>
-                          <span className="text-xs">No Store Image</span>
-                        </div>
-                      )}
 
-                      {/* Category Badge */}
-                      {store.category && (
-                        <span
-                          className="absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm"
-                          style={{
-                            backgroundColor:
-                              CATEGORY_COLORS[store.category] || "#0F2C27",
-                          }}
-                        >
-                          {store.category}
-                        </span>
-                      )}
-                    </div>
+                  {/* Store Image */}
+                  <div className="flex h-52 items-center justify-center overflow-hidden bg-[#FAFAF7]">
 
-                    {/* Store Info */}
-                    <div className="p-6">
-                      <h2 className="font-serif text-xl font-semibold text-[#14201C] group-hover:text-[#B8892B] transition">
-                        {store.name}
-                      </h2>
+                    {store.logoUrl ? (
+                      <img
+                        src={store.logoUrl}
+                        alt={store.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm text-[#9A9D96]">
+                        Store Image
+                      </span>
+                    )}
 
-                      <p className="mt-2 text-sm text-[#6B6F6D] line-clamp-2">
-                        {store.description ||
-                          "Explore unique products curated by this vendor."}
-                      </p>
-                    </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="border-t border-[#E4E1D9]/60 px-6 py-4 bg-[#FAFAF7]/50 flex items-center justify-between">
-                    <span className="text-xs text-[#9A9D96]">
-                      /{store.slug}
-                    </span>
+                  {/* Store Information */}
+                  <div className="p-6">
+
+                    {store.category && (
+                      <span
+                        className="inline-block rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wide"
+                        style={{
+                          backgroundColor: `${categoryColor}1F`,
+                          color: categoryColor,
+                        }}
+                      >
+                        {store.category}
+                      </span>
+                    )}
+
+                    <h2 className="mt-4 text-xl font-semibold text-[#14201C]">
+                      {store.name}
+                    </h2>
+
+                    {store.description && (
+                      <p className="mt-2 text-sm leading-6 text-[#6B6F6D]">
+                        {store.description}
+                      </p>
+                    )}
+
                     <Link
-                      to={`/products?store=${storeId}&storeName=${encodeURIComponent(store.name)}`}
-                      className="inline-flex items-center gap-1 text-sm font-semibold text-[#0F2C27] hover:text-[#B8892B] transition"
+                      to={`/stores/${store.slug}`}
+                      className="mt-5 inline-flex items-center text-sm font-semibold text-[#0F2C27] hover:underline"
                     >
-                      Visit Store →
+                      Visit Store
+                      <span className="ml-1">→</span>
                     </Link>
+
                   </div>
                 </div>
               );
             })}
+
           </div>
         )}
+
       </section>
+
     </main>
   );
 }

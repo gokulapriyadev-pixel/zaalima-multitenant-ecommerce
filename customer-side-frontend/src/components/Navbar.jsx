@@ -1,29 +1,24 @@
 import { ShoppingCart } from "lucide-react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { selectIsAuthenticated, selectUser, logout } from "../redux/authSlice";
-import { selectCartTotalItems } from "../redux/cartSlice";
- 
+import { useDispatch, useSelector } from "react-redux";
+import {
+  logout,
+  selectIsAuthenticated,
+  selectUser,
+} from "../redux/authSlice";
+
 const NAV_LINKS = [
   { label: "Home", to: "/" },
   { label: "Stores", to: "/stores" },
   { label: "Products", to: "/products" },
 ];
- 
+
 const Navbar = () => {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
-  
-  // 1. Pull auth & cart state from Redux
+  const navigate = useNavigate();
+
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectUser);
-  const totalCartItems = useSelector(selectCartTotalItems);
-
-  // 2. Handle Logout
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
 
   const navLinkClasses = ({ isActive }) =>
     `relative pb-1 text-sm font-medium transition ${
@@ -31,11 +26,16 @@ const Navbar = () => {
         ? "text-[#14201C] font-semibold after:absolute after:-bottom-[1px] after:left-0 after:h-[2px] after:w-full after:bg-[#B8892B]"
         : "text-[#6B6F6D] hover:text-[#14201C]"
     }`;
- 
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
+
   return (
     <header className="sticky top-0 z-50 border-b border-[#E4E1D9] bg-white">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
- 
+
         {/* Logo */}
         <Link
           to="/"
@@ -43,7 +43,7 @@ const Navbar = () => {
         >
           Zaalima
         </Link>
- 
+
         {/* Navigation */}
         <div className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
@@ -56,19 +56,23 @@ const Navbar = () => {
               {link.label}
             </NavLink>
           ))}
-          {isAuthenticated && (
-            <NavLink
-              to="/orders"
+          {isAuthenticated &&
+          ["vendor", "super_admin"].includes(user?.role) && (
+          <NavLink
+              to="/analytics"
               className={navLinkClasses}
-            >
-              My Orders
-            </NavLink>
-          )}
+        >       
+          Analytics
+          </NavLink>
+        )}
+
+
         </div>
- 
+      
+
         {/* Right Side */}
         <div className="flex items-center gap-3">
- 
+
           {/* Cart */}
           <Link
             to="/cart"
@@ -76,30 +80,9 @@ const Navbar = () => {
             aria-label="Shopping cart"
           >
             <ShoppingCart size={20} strokeWidth={1.75} />
-            {totalCartItems > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#B8892B] px-1 text-[10px] font-bold text-white shadow-sm">
-                {totalCartItems > 99 ? "99+" : totalCartItems}
-              </span>
-            )}
           </Link>
- 
-          {/* Conditionally render based on Auth State */}
-          {isAuthenticated ? (
-            <div className="flex items-center gap-4 pl-2 border-l border-gray-200">
-              <Link
-                to="/orders"
-                className="hidden text-sm font-semibold text-[#14201C] hover:text-[#0F2C27] sm:block"
-              >
-                Hi, {user?.name?.split(' ')[0] || "User"}
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-sm font-medium text-red-500 transition hover:text-red-700"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
+
+          {!isAuthenticated ? (
             <>
               {/* Login */}
               <Link
@@ -108,7 +91,7 @@ const Navbar = () => {
               >
                 Login
               </Link>
- 
+
               {/* Register */}
               <Link
                 to="/register"
@@ -117,13 +100,28 @@ const Navbar = () => {
                 Register
               </Link>
             </>
+          ) : (
+            <>
+              {/* User */}
+              <span className="hidden text-sm font-medium text-[#14201C] sm:block">
+                Hi, {user?.name || "Customer"}
+              </span>
+
+              {/* Logout */}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-lg bg-[#0F2C27] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#123832]"
+              >
+                Logout
+              </button>
+            </>
           )}
- 
+
         </div>
       </nav>
     </header>
   );
-}
- 
+};
+
 export default Navbar;
- 
