@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { ShieldCheck, Store as StoreIcon, Truck } from "lucide-react";
 
 
 import headphone from "../assets/headphone.png";
@@ -57,18 +56,18 @@ const Home = () => {
           {/* Hero Visual */}
           <div className="flex justify-center lg:justify-end">
             <div className="relative h-[400px] w-full max-w-[500px]">
-            
-          <div className="absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#B8892B]/25 blur-2xl" />
-          
 
-             <div
+              <div className="absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#B8892B]/25 blur-2xl" />
+
+
+              <div
                 className="absolute flex h-28 w-28 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl border border-[#E4E1D9] bg-white p-3 shadow-lg  sm:h-32 sm:w-32"
                 style={{ left: "34%", top: "24%", transform: "translate(-50%, -50%) rotate(-10deg)", zIndex: 20 }}
               >
                 <img src={sneakers} alt="Casual sneakers" className="h-full w-full object-cover" />
               </div>
 
-                   <div
+              <div
                 className="absolute flex h-28 w-28 items-center justify-center rounded-2xl border border-[#E4E1D9] bg-white p-3 shadow-lg  sm:h-32 sm:w-32"
                 style={{ left: "66%", top: "18%", transform: "translate(-50%, -50%) rotate(8deg)", zIndex: 20 }}
               >
@@ -129,10 +128,12 @@ const Home = () => {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
           <div className="group overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
-            <div className="flex h-48 items-center justify-center bg-[#FAFAF7]">
-              <span className="text-sm text-[#9A9D96]">
-                Store Image
-              </span>
+            <div className="flex h-48 items-center justify-center overflow-hidden bg-[#FAFAF7]">
+              <img
+                src="https://res.cloudinary.com/qtbpc2x7/image/upload/f_auto,q_auto/Screenshot_2026-09-11_170531"
+                alt="Fashion Store"
+                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+              />
             </div>
 
             <div className="p-5">
@@ -155,10 +156,12 @@ const Home = () => {
 
 
           <div className="group overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
-            <div className="flex h-48 items-center justify-center bg-[#FAFAF7]">
-              <span className="text-sm text-[#9A9D96]">
-                Store Image
-              </span>
+            <div className="flex h-48 items-center justify-center overflow-hidden bg-[#FAFAF7]">
+              <img
+                src="https://res.cloudinary.com/qtbpc2x7/image/upload/f_auto,q_auto/Screenshot_2026-09-11_171023"
+                alt="Electronics Store"
+                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+              />
             </div>
 
             <div className="p-5">
@@ -181,10 +184,12 @@ const Home = () => {
 
 
           <div className="group overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
-            <div className="flex h-48 items-center justify-center bg-[#FAFAF7]">
-              <span className="text-sm text-[#9A9D96]">
-                Store Image
-              </span>
+            <div className="flex h-48 items-center justify-center overflow-hidden bg-[#FAFAF7]">
+              <img
+                src="https://res.cloudinary.com/qtbpc2x7/image/upload/f_auto,q_auto/Screenshot_2026-09-11_171537"
+                alt="Home & Living"
+                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+              />
             </div>
 
             <div className="p-5">
@@ -238,12 +243,14 @@ const Home = () => {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
 
             {/* Product 1 */}
-            <div className="overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
+            <div className="group overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
 
-              <div className="flex h-64 items-center justify-center bg-white">
-                <span className="text-sm text-[#9A9D96]">
-                  Product Image
-                </span>
+              <div className="flex h-64 items-center justify-center overflow-hidden bg-white">
+                <img
+                  src="https://res.cloudinary.com/qtbpc2x7/image/upload/f_auto,q_auto/Screenshot_2026-09-11_194309"
+                  alt="Classic T-Shirt"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                />
               </div>
 
               <div className="p-5">
@@ -264,12 +271,14 @@ const Home = () => {
 
 
             {/* Product 2 */}
-            <div className="overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
+            <div className="group overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
 
-              <div className="flex h-64 items-center justify-center bg-white">
-                <span className="text-sm text-[#9A9D96]">
-                  Product Image
-                </span>
+              <div className="flex h-64 items-center justify-center overflow-hidden bg-white">
+                <img
+                  src="https://res.cloudinary.com/qtbpc2x7/image/upload/f_auto,q_auto/Screenshot_2026-09-11_194513"
+                  alt="Wireless Headphones"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                />
               </div>
 
               <div className="p-5">
@@ -290,12 +299,14 @@ const Home = () => {
 
 
             {/* Product 3 */}
-            <div className="overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
+            <div className="group overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
 
-              <div className="flex h-64 items-center justify-center bg-white">
-                <span className="text-sm text-[#9A9D96]">
-                  Product Image
-                </span>
+              <div className="flex h-64 items-center justify-center overflow-hidden bg-white">
+                <img
+                  src="https://res.cloudinary.com/qtbpc2x7/image/upload/f_auto,q_auto/Screenshot_2026-09-11_195026"
+                  alt="Modern Lamp"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                />
               </div>
 
               <div className="p-5">
@@ -308,7 +319,7 @@ const Home = () => {
                 </h3>
 
                 <p className="mt-2 text-lg font-bold text-[#14201C]">
-                  ₹1,299
+                  ₹449
                 </p>
               </div>
 
@@ -316,12 +327,14 @@ const Home = () => {
 
 
             {/* Product 4 */}
-            <div className="overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
+            <div className="group overflow-hidden rounded-xl border border-[#E4E1D9] bg-white transition hover:shadow-md">
 
-              <div className="flex h-64 items-center justify-center bg-white">
-                <span className="text-sm text-[#9A9D96]">
-                  Product Image
-                </span>
+              <div className="flex h-64 items-center justify-center overflow-hidden bg-white">
+                <img
+                  src="https://res.cloudinary.com/qtbpc2x7/image/upload/f_auto,q_auto/Screenshot_2026-09-11_195357"
+                  alt="Casual Sneakers"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                />
               </div>
 
               <div className="p-5">
@@ -411,23 +424,23 @@ const Home = () => {
       {/* ================= CTA ================= */}
       <section className="bg-[#EDE3CF]">
         <div className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6">
- 
+
           <h2 className="font-serif text-3xl tracking-tight text-[#14201C] sm:text-4xl">
             Ready to start shopping?
           </h2>
- 
+
           <p className="mx-auto mt-4 max-w-xl text-[#5C574E]">
             Explore stores and discover products from vendors
             across the platform.
           </p>
- 
+
           <Link
             to="/products"
             className="mt-8 inline-block rounded-lg bg-[#B8892B] px-6 py-3 text-sm font-semibold text-[#14201C] transition hover:bg-[#C79A38]"
           >
             Start Shopping
           </Link>
- 
+
         </div>
       </section>
 

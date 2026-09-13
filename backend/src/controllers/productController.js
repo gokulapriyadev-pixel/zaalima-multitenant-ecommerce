@@ -261,7 +261,9 @@ const getProductById = asyncHandler(async (req, res) => {
   const product = await Product.findOne({
     _id: req.params.id,
     isPublished: true
-  }).populate('categoryId', 'name slug');
+  })
+    .populate('categoryId', 'name slug')
+    .populate('storeId', 'name slug logoUrl');
 
   if (!product) {
     res.status(404);

@@ -3,7 +3,9 @@ const router = express.Router();
 const { 
   getPlatformAnalytics, 
   getAllStores, 
-  toggleStoreStatus 
+  toggleStoreStatus,
+  getAllUsers,
+  getAllOrders
 } = require('../controllers/adminController');
 const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 
@@ -14,5 +16,7 @@ router.use(authorizeRoles('super_admin'));
 router.get('/analytics', getPlatformAnalytics);
 router.get('/stores', getAllStores);
 router.put('/stores/:storeId/status', toggleStoreStatus);
+router.get('/users', getAllUsers);
+router.get('/orders', getAllOrders);
 
 module.exports = router;

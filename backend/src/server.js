@@ -25,7 +25,10 @@ connectDB();
 app.use(helmet());
 // Enable CORS for frontend communication
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:5173',// Customer Frontend
+    process.env.VENDOR_URL || 'http://localhost:5174'    // Vendor Dashboard
+  ],
   credentials: true
 }));
 // Parse incoming JSON payloads
@@ -60,6 +63,7 @@ app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
+app.use('/api/wishlist', require('./routes/wishlistRoutes'));
 
 
 // ==========================================

@@ -42,6 +42,7 @@ const createRazorpayOrder = asyncHandler(async (req, res) => {
     status: 'success',
     message: 'Razorpay order created successfully',
     order: razorpayOrder,
+    keyId: process.env.RAZORPAY_KEY_ID,
     mongoOrderId: order._id
   });
 });

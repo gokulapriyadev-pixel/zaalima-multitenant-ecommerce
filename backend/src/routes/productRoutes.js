@@ -11,12 +11,7 @@ const {
   createProductReview,
   uploadProductImage
 } = require('../controllers/productController');
-
-const {
-  protect,
-  authorizeRoles
-} = require('../middlewares/authMiddleware');
-
+const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/uploadMiddleware');
 
 // ==========================================

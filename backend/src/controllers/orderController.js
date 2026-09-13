@@ -192,6 +192,37 @@ const createOrder = asyncHandler(async (req, res) => {
   }
 
   // ==========================================
+  // ATOMICALLY DEDUCT INVENTORY
+  // ==========================================
+
+  const deductedProducts = [];
+  for (const item of checkoutProducts) {
+    const updatedProduct = await Product.findOneAndUpdate(
+      {
+        _id: item.productId,
+        inventoryCount: { $gte: item.quantity }
+      },
+      {
+        $inc: { inventoryCount: -item.quantity }
+      },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      // Roll back any items deducted during this loop
+      for (const deducted of deductedProducts) {
+        await Product.findByIdAndUpdate(deducted.productId, {
+          $inc: { inventoryCount: deducted.quantity }
+        });
+      }
+      res.status(400);
+      throw new Error('One or more items are out of stock. Please adjust your cart and try again.');
+    }
+
+    deductedProducts.push(item);
+  }
+
+  // ==========================================
   // CREATE ORDER
   // ==========================================
 
@@ -204,21 +235,6 @@ const createOrder = asyncHandler(async (req, res) => {
     orderStatus: 'processing',
     shippingAddress
   });
-
-  // ==========================================
-  // DEDUCT INVENTORY
-  // ==========================================
-
-  for (const item of checkoutProducts) {
-    await Product.findByIdAndUpdate(
-      item.productId,
-      {
-        $inc: {
-          inventoryCount: -item.quantity
-        }
-      }
-    );
-  }
 
   // ==========================================
   // EMPTY CART
@@ -348,12 +364,12 @@ const getStoreAnalytics = asyncHandler(async (req, res) => {
 
   const orders = await Order.find({
     storeId: store._id
-  });
+  }).sort({ createdAt: -1 });
 
   const totalOrders = orders.length;
 
   const totalRevenue = orders.reduce(
-    (sum, order) => sum + order.totalAmount,
+    (sum, order) => sum + (order.totalAmount || 0),
     0
   );
 
@@ -362,13 +378,50 @@ const getStoreAnalytics = asyncHandler(async (req, res) => {
     inventoryCount: { $lt: 5 }
   }).select('name inventoryCount price');
 
+  // 1. Order status distribution
+  const orderStatusBreakdown = {
+    delivered: orders.filter(o => o.orderStatus === 'delivered').length,
+    shipped: orders.filter(o => o.orderStatus === 'shipped').length,
+    processing: orders.filter(o => o.orderStatus === 'processing').length,
+    cancelled: orders.filter(o => o.orderStatus === 'cancelled').length,
+  };
+
+  // 2. 7-day sales and orders trend
+  const salesTrend = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    d.setHours(0, 0, 0, 0);
+
+    const nextD = new Date(d);
+    nextD.setDate(d.getDate() + 1);
+
+    const dayOrders = orders.filter(o => {
+      const orderDate = new Date(o.createdAt);
+      return orderDate >= d && orderDate < nextD;
+    });
+
+    const dayRevenue = dayOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    salesTrend.push({
+      date: dateLabel,
+      day: dayLabel,
+      revenue: Math.round(dayRevenue),
+      orders: dayOrders.length
+    });
+  }
+
   res.status(200).json({
     status: 'success',
     storeName: store.name,
     totalOrders,
     totalRevenue: Number(totalRevenue.toFixed(2)),
     lowInventoryItems: lowInventoryProducts.length,
-    lowInventoryProducts
+    lowInventoryProducts,
+    orderStatusBreakdown,
+    salesTrend
   });
 });
 
