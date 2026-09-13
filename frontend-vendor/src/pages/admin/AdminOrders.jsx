@@ -197,14 +197,19 @@ function AdminOrders() {
 
                     {/* Payment Status */}
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        order.isPaid
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${order.isPaid ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
-                        {order.isPaid ? 'Paid' : 'Unpaid'}
-                      </span>
+                      {(() => {
+                        const isOrderPaid = order.paymentStatus === 'paid' || order.isPaid;
+                        return (
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            isOrderPaid
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isOrderPaid ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                            {isOrderPaid ? 'Paid' : 'Unpaid'}
+                          </span>
+                        );
+                      })()}
                     </td>
 
                     {/* Fulfillment Status */}

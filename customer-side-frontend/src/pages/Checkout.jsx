@@ -125,7 +125,7 @@ function Checkout() {
       const { order: razorpayOrder } = razorpayRes.data;
 
       // 3. Open Razorpay Checkout Modal
-      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_placeholder";
+      const razorpayKey = razorpayRes.data.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_TPwn3pNGAEgMkL";
 
       let customerEmail = "customer@example.com";
       let customerName = "Valued Customer";
@@ -161,6 +161,11 @@ function Checkout() {
         },
         prefill: { name: customerName, email: customerEmail },
         theme: { color: "#0F2C27" },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          },
+        },
       };
 
       if (!window.Razorpay) {
@@ -168,10 +173,14 @@ function Checkout() {
       }
 
       const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        console.error("Razorpay Payment Failed:", response.error);
+        setError(response.error?.description || "Payment was rejected or cancelled.");
+        setLoading(false);
+      });
       rzp.open();
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Checkout failed.");
-    } finally {
       setLoading(false);
     }
   };
