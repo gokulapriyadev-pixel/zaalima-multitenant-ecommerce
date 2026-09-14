@@ -30,8 +30,8 @@ function OrderTable({ orders }) {
               <td className="px-4 py-3 font-mono text-xs text-gray-700">
                 #{String(order._id).slice(-6).toUpperCase()}
               </td>
-              <td className="px-4 py-3">{order.customerName || "—"}</td>
-              <td className="px-4 py-3">{order.items?.length ?? 0}</td>
+              <td className="px-4 py-3">{order.customerId?.name || "—"}</td>
+              <td className="px-4 py-3">{order.products?.length ?? 0}</td>
               <td className="px-4 py-3 font-medium">
                 ₹{Number(order.totalAmount || 0).toLocaleString("en-IN")}
               </td>
