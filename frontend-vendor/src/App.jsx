@@ -35,6 +35,7 @@ function App() {
             </Layout>
           }
         />
+
         <Route
           path="/register"
           element={
