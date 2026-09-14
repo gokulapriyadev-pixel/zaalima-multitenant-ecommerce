@@ -1,14 +1,13 @@
 import StatusBadge from "./StatusBadge";
+import EmptyState from "./EmptyState";
 
 function OrderTable({ orders }) {
   if (!orders.length) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
-        <p className="text-gray-500">No orders yet.</p>
-        <p className="text-sm text-gray-400 mt-1">
-          Orders placed against your store will appear here.
-        </p>
-      </div>
+      <EmptyState
+        title="No orders yet"
+        message="Orders placed against your store will appear here."
+      />
     );
   }
 

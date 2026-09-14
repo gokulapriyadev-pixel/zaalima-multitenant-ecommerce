@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import OrderTable from "../components/OrderTable";
+import Spinner from "../components/Spinner";
+import ErrorState from "../components/ErrorState";
 
 const SAMPLE_ORDERS = [
   {
@@ -41,30 +43,33 @@ const FILTERS = ["all", "pending", "paid", "shipped", "delivered", "cancelled"];
 function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [usingSample, setUsingSample] = useState(false);
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    async function fetchOrders() {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/orders/vendor", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  async function fetchOrders() {
+    setLoading(true);
+    setUsingSample(false);
 
-        if (!res.ok) throw new Error("Could not load orders");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/orders/vendor", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        const data = await res.json();
-        setOrders(Array.isArray(data) ? data : data.orders || []);
-      } catch (err) {
-        // Backend order API not ready yet — show sample data so the UI is testable
-        setError(err.message);
-        setOrders(SAMPLE_ORDERS);
-      } finally {
-        setLoading(false);
-      }
+      if (!res.ok) throw new Error("Could not load orders");
+
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : data.orders || []);
+    } catch {
+      // Backend order API not ready yet — fall back to sample data
+      setUsingSample(true);
+      setOrders(SAMPLE_ORDERS);
+    } finally {
+      setLoading(false);
     }
+  }
 
+  useEffect(() => {
     fetchOrders();
   }, []);
 
@@ -75,12 +80,23 @@ function Orders() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-1">Orders</h1>
-      <p className="text-gray-500 mb-6">
-        Incoming customer orders placed against your store.
-      </p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800 mb-1">Orders</h1>
+          <p className="text-gray-500">
+            Incoming customer orders placed against your store.
+          </p>
+        </div>
+        <button
+          onClick={fetchOrders}
+          disabled={loading}
+          className="px-4 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+        >
+          Refresh
+        </button>
+      </div>
 
-      {error && (
+      {usingSample && (
         <div className="mb-4 rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
           Live order API unavailable — showing sample data.
         </div>
@@ -103,9 +119,7 @@ function Orders() {
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-10 text-center text-gray-500">
-          Loading orders…
-        </div>
+        <Spinner label="Loading orders…" />
       ) : (
         <OrderTable orders={visibleOrders} />
       )}
