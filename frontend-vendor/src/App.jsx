@@ -4,12 +4,13 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
+import Orders from "./pages/Orders";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Send the root URL to the login page */}
+        {/* Root URL goes to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         <Route
@@ -48,7 +49,16 @@ function App() {
           }
         />
 
-        {/* Any unknown URL falls back to login */}
+        <Route
+          path="/orders"
+          element={
+            <Layout>
+              <Orders />
+            </Layout>
+          }
+        />
+
+        {/* Unknown URLs fall back to login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
