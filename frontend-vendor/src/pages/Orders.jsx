@@ -18,12 +18,31 @@ const SAMPLE_ORDERS = [
     status: "pending",
     createdAt: "2026-09-13T14:40:00.000Z",
   },
+  {
+    _id: "65f1a2b3c4d5e6f708192a5d",
+    customerName: "Divya M",
+    items: [{ name: "Leather Wallet", qty: 1 }],
+    totalAmount: 899,
+    status: "shipped",
+    createdAt: "2026-09-13T09:20:00.000Z",
+  },
+  {
+    _id: "65f1a2b3c4d5e6f708192a6e",
+    customerName: "Ravi K",
+    items: [{ name: "Wireless Earbuds", qty: 1 }],
+    totalAmount: 3499,
+    status: "cancelled",
+    createdAt: "2026-09-14T08:05:00.000Z",
+  },
 ];
+
+const FILTERS = ["all", "pending", "paid", "shipped", "delivered", "cancelled"];
 
 function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     async function fetchOrders() {
@@ -49,6 +68,11 @@ function Orders() {
     fetchOrders();
   }, []);
 
+  const visibleOrders =
+    filter === "all"
+      ? orders
+      : orders.filter((o) => String(o.status).toLowerCase() === filter);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold text-gray-800 mb-1">Orders</h1>
@@ -62,12 +86,28 @@ function Orders() {
         </div>
       )}
 
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {FILTERS.map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilter(s)}
+            className={`px-3 py-1.5 rounded-full text-sm border transition ${
+              filter === s
+                ? "bg-gray-800 text-white border-gray-800"
+                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {s.charAt(0).toUpperCase() + s.slice(1)}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="bg-white rounded-lg border border-gray-200 p-10 text-center text-gray-500">
           Loading orders…
         </div>
       ) : (
-        <OrderTable orders={orders} />
+        <OrderTable orders={visibleOrders} />
       )}
     </div>
   );

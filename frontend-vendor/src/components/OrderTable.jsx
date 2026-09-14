@@ -1,3 +1,5 @@
+import StatusBadge from "./StatusBadge";
+
 function OrderTable({ orders }) {
   if (!orders.length) {
     return (
@@ -40,9 +42,7 @@ function OrderTable({ orders }) {
                   : "—"}
               </td>
               <td className="px-4 py-3">
-                <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">
-                  {order.status || "pending"}
-                </span>
+                <StatusBadge status={order.status} />
               </td>
             </tr>
           ))}
