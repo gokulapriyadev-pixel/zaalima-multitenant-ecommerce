@@ -1,128 +1,198 @@
-import { useEffect, useState } from "react";
-import OrderTable from "../components/OrderTable";
-import Spinner from "../components/Spinner";
-import ErrorState from "../components/ErrorState";
-
-const SAMPLE_ORDERS = [
-  {
-    _id: "65f1a2b3c4d5e6f708192a3b",
-    customerName: "Anitha R",
-    items: [{ name: "Cotton T-Shirt", qty: 2 }],
-    totalAmount: 1298,
-    status: "paid",
-    createdAt: "2026-09-12T10:15:00.000Z",
-  },
-  {
-    _id: "65f1a2b3c4d5e6f708192a4c",
-    customerName: "Karthik S",
-    items: [{ name: "Running Shoes", qty: 1 }],
-    totalAmount: 2499,
-    status: "pending",
-    createdAt: "2026-09-13T14:40:00.000Z",
-  },
-  {
-    _id: "65f1a2b3c4d5e6f708192a5d",
-    customerName: "Divya M",
-    items: [{ name: "Leather Wallet", qty: 1 }],
-    totalAmount: 899,
-    status: "shipped",
-    createdAt: "2026-09-13T09:20:00.000Z",
-  },
-  {
-    _id: "65f1a2b3c4d5e6f708192a6e",
-    customerName: "Ravi K",
-    items: [{ name: "Wireless Earbuds", qty: 1 }],
-    totalAmount: 3499,
-    status: "cancelled",
-    createdAt: "2026-09-14T08:05:00.000Z",
-  },
-];
-
-const FILTERS = ["all", "pending", "paid", "shipped", "delivered", "cancelled"];
+import { useState, useEffect } from 'react';
+import Sidebar from '../components/Sidebar';
+import TopBar from '../components/TopBar';
+import api from '../services/api';
 
 function Orders() {
   const [orders, setOrders] = useState([]);
+  const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [usingSample, setUsingSample] = useState(false);
-  const [filter, setFilter] = useState("all");
+  const [updatingId, setUpdatingId] = useState(null);
+  const [error, setError] = useState('');
 
-  async function fetchOrders() {
-    setLoading(true);
-    setUsingSample(false);
-
+  const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/orders/vendor", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      setLoading(true);
+      setError('');
 
-      if (!res.ok) throw new Error("Could not load orders");
+      // 1. Get vendor's store
+      const storeRes = await api.get('/stores/my-store');
+      const currentStore = storeRes.data.store;
+      setStore(currentStore);
 
-      const data = await res.json();
-      setOrders(Array.isArray(data) ? data : data.orders || []);
-    } catch {
-      // Backend order API not ready yet — fall back to sample data
-      setUsingSample(true);
-      setOrders(SAMPLE_ORDERS);
+      // 2. Get orders for this store
+      if (currentStore?._id) {
+        const ordersRes = await api.get(`/orders/store/${currentStore._id}`);
+        setOrders(ordersRes.data.orders || []);
+      }
+    } catch (err) {
+      console.error("Failed to load store orders:", err);
+      setError(err.response?.data?.message || 'Failed to load orders for your store.');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  const visibleOrders =
-    filter === "all"
-      ? orders
-      : orders.filter((o) => String(o.status).toLowerCase() === filter);
+  const handleStatusChange = async (orderId, newStatus) => {
+    try {
+      setUpdatingId(orderId);
+      await api.put(`/orders/${orderId}/status`, { orderStatus: newStatus });
+      setOrders((prev) =>
+        prev.map((o) => (o._id === orderId ? { ...o, orderStatus: newStatus } : o))
+      );
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update order status');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'delivered':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'shipped':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'processing':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'cancelled':
+        return 'bg-red-50 text-red-700 border-red-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
 
   return (
-    <div className="p-6">
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800 mb-1">Orders</h1>
-          <p className="text-gray-500">
-            Incoming customer orders placed against your store.
-          </p>
-        </div>
-        <button
-          onClick={fetchOrders}
-          disabled={loading}
-          className="px-4 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-        >
-          Refresh
-        </button>
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar activePage="orders" />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopBar title="Store Order Fulfillment" />
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Customer Orders</h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Review and update shipping progress for incoming customer purchases.
+              </p>
+            </div>
+            <button
+              onClick={fetchOrders}
+              className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+            >
+              ↻ Refresh
+            </button>
+          </div>
+
+          {error && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl mb-6 text-sm">
+              {error}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="p-16 text-center text-gray-500">Loading customer orders...</div>
+          ) : orders.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-16 text-center text-gray-500">
+              <p className="font-semibold text-gray-800 text-base">No orders received yet</p>
+              <p className="text-sm text-gray-400 mt-1">
+                When customers purchase your products, their orders will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-left text-gray-500 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3">Order ID / Date</th>
+                      <th className="px-4 py-3">Customer</th>
+                      <th className="px-4 py-3">Items Summary</th>
+                      <th className="px-4 py-3">Total Amount</th>
+                      <th className="px-4 py-3">Payment</th>
+                      <th className="px-4 py-3">Fulfillment Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {orders.map((order) => {
+                      const formattedDate = order.createdAt
+                        ? new Date(order.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : 'Recent';
+
+                      return (
+                        <tr key={order._id} className="hover:bg-gray-50/60 transition">
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-xs font-semibold text-gray-800 block">
+                              #{order._id.slice(-8)}
+                            </span>
+                            <span className="text-xs text-gray-400">{formattedDate}</span>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-gray-900">
+                              {order.customerId?.name || 'Customer'}
+                            </p>
+                            <p className="text-xs text-gray-400">{order.customerId?.email}</p>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <div className="text-xs text-gray-600 max-w-xs space-y-1">
+                              {order.products?.map((p, idx) => (
+                                <div key={idx} className="truncate">
+                                  • {p.productId?.name || 'Product'} (x{p.quantity})
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3 font-bold text-gray-900">
+                            ₹{order.totalAmount?.toLocaleString('en-IN')}
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold uppercase ${
+                                order.paymentStatus === 'paid'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {order.paymentStatus || 'pending'}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <select
+                              value={order.orderStatus || 'processing'}
+                              disabled={updatingId === order._id || order.orderStatus === 'cancelled'}
+                              onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                              className={`border rounded-lg px-2.5 py-1 text-xs font-semibold uppercase tracking-wider outline-none cursor-pointer transition ${getStatusBadge(
+                                order.orderStatus
+                              )}`}
+                            >
+                              <option value="processing">Processing</option>
+                              <option value="shipped">Shipped</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </main>
       </div>
-
-      {usingSample && (
-        <div className="mb-4 rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-          Live order API unavailable — showing sample data.
-        </div>
-      )}
-
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {FILTERS.map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 rounded-full text-sm border transition ${
-              filter === s
-                ? "bg-gray-800 text-white border-gray-800"
-                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            {s.charAt(0).toUpperCase() + s.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <Spinner label="Loading orders…" />
-      ) : (
-        <OrderTable orders={visibleOrders} />
-      )}
     </div>
   );
 }

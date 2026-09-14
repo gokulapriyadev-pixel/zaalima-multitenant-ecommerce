@@ -1,32 +1,71 @@
-import { Link, useLocation } from "react-router-dom";
+import { NavLink, useNavigate } from 'react-router-dom';
 
-const NAV_ITEMS = [
-  { label: "Dashboard", path: "/dashboard" },
-  { label: "Products", path: "/products" },
-  { label: "Orders", path: "/orders" },
-  { label: "Pricing", path: "/pricing" },
-  { label: "Settings", path: "/settings" },
+const navItems = [
+  { label: 'Dashboard', to: '/dashboard' },
+  { label: 'Products', to: '/products' },
+  { label: 'Orders', to: '/orders' },
+  { label: 'Coupons', to: '/coupons' },
+  { label: 'Store Settings', to: '/settings' },
 ];
 
-function Sidebar() {
-  const { pathname } = useLocation();
+function Sidebar({ activePage }) {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('vendorToken');
+    localStorage.removeItem('vendorInfo');
+    navigate('/login');
+  };
+
+  let vendorName = 'Vendor Portal';
+  try {
+    const info = JSON.parse(localStorage.getItem('vendorInfo') || '{}');
+    if (info.name) vendorName = info.name;
+  } catch (e) {
+    // ignore
+  }
 
   return (
-    <nav className="flex flex-col gap-1 p-4">
-      {NAV_ITEMS.map((item) => (
-        <Link
-          key={item.path}
-          to={item.path}
-          className={`px-4 py-2 rounded-md ${
-            pathname === item.path
-              ? "bg-blue-50 text-blue-600 font-medium"
-              : "text-gray-700 hover:bg-gray-50"
-          }`}
+    <aside className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col justify-between shrink-0">
+      <div>
+        <div className="px-6 py-5 border-b border-gray-100">
+          <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 block">
+            Vendor Dashboard
+          </span>
+          <h1 className="text-lg font-bold text-gray-900 truncate mt-0.5">
+            {vendorName}
+          </h1>
+        </div>
+
+        <nav className="px-3 py-4 space-y-1">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive || (activePage && item.to.includes(activePage))
+                    ? 'bg-blue-50 text-blue-600 font-semibold'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+
+      {/* Bottom Logout */}
+      <div className="p-4 border-t border-gray-100">
+        <button
+          onClick={handleLogout}
+          className="w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
         >
-          {item.label}
-        </Link>
-      ))}
-    </nav>
+          Sign Out
+        </button>
+      </div>
+    </aside>
   );
 }
 

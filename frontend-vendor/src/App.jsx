@@ -5,13 +5,27 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Orders from "./pages/Orders";
+import Coupons from "./pages/Coupons";
+import Settings from "./pages/Settings";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+// Super Admin Suite
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminStores from "./pages/admin/AdminStores";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminOrders from "./pages/admin/AdminOrders";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Root URL goes to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route 
+          path="/" 
+          element={
+            <Navigate to="/login" replace />
+          } 
+        />
 
         <Route
           path="/login"
@@ -31,35 +45,23 @@ function App() {
           }
         />
 
-        <Route
-          path="/dashboard"
-          element={
-            <Layout>
-              <Dashboard />
-            </Layout>
-          }
-        />
+        {/* Protected Vendor Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/coupons" element={<Coupons />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
 
-        <Route
-          path="/products"
-          element={
-            <Layout>
-              <Products />
-            </Layout>
-          }
-        />
-
-        <Route
-          path="/orders"
-          element={
-            <Layout>
-              <Orders />
-            </Layout>
-          }
-        />
-
-        {/* Unknown URLs fall back to login */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Protected Super Admin Routes */}
+        <Route element={<AdminProtectedRoute />}>
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/stores" element={<AdminStores />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

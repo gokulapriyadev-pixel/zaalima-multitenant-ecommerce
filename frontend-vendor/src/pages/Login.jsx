@@ -1,14 +1,18 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AuthCard from "../components/AuthCard";
 import Button from "../components/Button";
 import Input from "../components/Input";
+import api from "../services/api";
 
 function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   const validate = () => {
     const newErrors = {};
@@ -25,7 +29,7 @@ function Login() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
@@ -33,13 +37,38 @@ function Login() {
       return;
     }
     setErrors({});
+    setApiError("");
     setLoading(true);
 
-    // Simulated login (backend not connected yet)
-    setTimeout(() => {
+    try {
+      const response = await api.post('/auth/login', { email, password });
+
+      // Guardrail: Kick out standard customers
+      if (response.data.role === 'customer') {
+        setApiError("Access denied. Customers cannot log into this portal.");
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem('vendorToken', response.data.token);
+      localStorage.setItem('vendorInfo', JSON.stringify(response.data));
+
       setLoading(false);
       setSuccess(true);
-    }, 1200);
+
+      const isSuperAdmin = response.data.role === 'super_admin' || response.data.role === 'superadmin';
+      setTimeout(() => {
+        if (isSuperAdmin) {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      }, 1000);
+
+    } catch (error) {
+      setLoading(false);
+      setApiError(error.response?.data?.message || "Invalid email or password.");
+    }
   };
 
   if (success) {
@@ -56,7 +85,12 @@ function Login() {
   }
 
   return (
-    <AuthCard title="Vendor Login">
+    <AuthCard title="Merchant Login">
+      {apiError && (
+        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-200">
+          {apiError}
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <Input
           label="Email"

@@ -1,0 +1,46 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/**
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Check JavaScript syntax
+        run: |
+          node --check src/server.js
+          node --check src/config/razorpay.js
+          node --check src/config/email.js
+          node --check src/controllers/authController.js
+          node --check src/controllers/storeController.js
+          node --check src/controllers/productController.js
+          node --check src/controllers/orderController.js
+          node --check src/controllers/paymentController.js
+          node --check src/controllers/categoryController.js
+          node --check src/routes/authRoutes.js
+          node --check src/routes/storeRoutes.js
+          node --check src/routes/productRoutes.js
+          node --check src/routes/orderRoutes.js
+          node --check src/routes/paymentRoutes.js
+          node --check src/routes/categoryRoutes.js
