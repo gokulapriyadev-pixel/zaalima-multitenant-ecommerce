@@ -120,7 +120,7 @@ function Analytics() {
 
       <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
         <h2 className="font-medium text-gray-800 mb-4">Revenue — last 7 days</h2>
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={220}>
           <LineChart data={series}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="label" tick={{ fontSize: 12 }} />
@@ -139,7 +139,7 @@ function Analytics() {
 
       <div className="bg-white rounded-lg border border-gray-200 p-5">
         <h2 className="font-medium text-gray-800 mb-4">Order volume — last 7 days</h2>
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={220}>
           <BarChart data={series}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="label" tick={{ fontSize: 12 }} />
