@@ -14,3 +14,19 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the Oxlint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+
+
+## Deployment
+
+The vendor frontend is deployed as a Vite application.
+
+### Vercel Configuration
+
+- Root Directory: `frontend-vendor`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Environment Variable: `VITE_API_URL`
+
+The `VITE_API_URL` should point to the deployed backend API ending with `/api`.
+
+The project includes `vercel.json` for SPA routing support.
