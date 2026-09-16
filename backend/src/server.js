@@ -26,8 +26,9 @@ app.use(helmet());
 // Enable CORS for frontend communication
 app.use(cors({
   origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',// Customer Frontend
-    process.env.VENDOR_URL || 'http://localhost:5174'    // Vendor Dashboard
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    process.env.VENDOR_URL || 'http://localhost:5174',
+    'https://zaalima-multitenant-ecommerce.vercel.app'
   ],
   credentials: true
 }));
