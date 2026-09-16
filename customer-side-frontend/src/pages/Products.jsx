@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import {
   getPublicStores,
@@ -7,8 +8,8 @@ import {
 
 function Products() {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState([]);
-  const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -20,8 +21,6 @@ function Products() {
 
         const storesData = await getPublicStores();
         const publicStores = storesData.stores || [];
-
-        setStores(publicStores);
 
         const publicProducts =
           await getAllPublicProducts(publicStores);
@@ -36,6 +35,8 @@ function Products() {
           return {
             ...product,
             store: store?.name || "Zaalima Store",
+            storeId: store?._id || product.storeId,
+            storeName: store?.name || "Zaalima Store",
           };
         });
 
@@ -66,19 +67,25 @@ function Products() {
   }, [products]);
 
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === "All") {
-      return products;
-    }
-
     return products.filter((product) => {
       const category =
         typeof product.categoryId === "object"
           ? product.categoryId?.name
           : product.category;
 
-      return category === selectedCategory;
+      const matchesCategory =
+        selectedCategory === "All" || category === selectedCategory;
+
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        (product.name && product.name.toLowerCase().includes(q)) ||
+        (product.description && product.description.toLowerCase().includes(q)) ||
+        (product.store && product.store.toLowerCase().includes(q));
+
+      return matchesCategory && matchesSearch;
     });
-  }, [products, selectedCategory]);
+  }, [products, selectedCategory, searchQuery]);
 
   if (loading) {
     return (
@@ -140,35 +147,56 @@ function Products() {
       {/* Products Section */}
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
 
-        {/* Filters */}
-        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-
-          {/* Categories */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
+        {/* Search & Filters */}
+        <div className="mb-8 space-y-4">
+          {/* Search Bar */}
+          <div className="relative max-w-md">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+              <Search size={18} />
+            </span>
+            <input
+              type="text"
+              placeholder="Search products by name, description, or store..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E4E1D9] bg-white text-sm text-[#14201C] placeholder-gray-400 outline-none focus:border-[#B8892B] focus:ring-2 focus:ring-[#B8892B]/20 transition shadow-xs"
+            />
+            {searchQuery && (
               <button
-                key={category}
                 type="button"
-                onClick={() => setSelectedCategory(category)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  selectedCategory === category
-                    ? "bg-[#0F2C27] text-white"
-                    : "border border-[#E4E1D9] bg-white text-[#14201C] hover:bg-[#FAFAF7]"
-                }`}
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-gray-400 hover:text-gray-600"
               >
-                {category}
+                Clear
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Product Count */}
-          <p className="text-sm text-[#6B6F6D]">
-            <span className="font-semibold text-[#14201C]">
-              {filteredProducts.length}
-            </span>{" "}
-            products
-          </p>
+          {/* Categories & Product Count */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Categories */}
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setSelectedCategory(category)}
+                  className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                    selectedCategory === category
+                      ? "bg-[#0F2C27] text-white shadow-xs"
+                      : "border border-[#E4E1D9] bg-white text-[#14201C] hover:bg-[#FAFAF7]"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
 
+            {/* Product Count */}
+            <p className="text-xs font-medium text-[#6B6F6D]">
+              Showing <span className="font-bold text-[#14201C]">{filteredProducts.length}</span> of {products.length} products
+            </p>
+          </div>
         </div>
 
         {/* Product Grid */}

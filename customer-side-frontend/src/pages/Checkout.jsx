@@ -1,19 +1,37 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 
 import {
   createOrder,
-  getCart,
   createRazorpayOrder,
   verifyRazorpayPayment,
+  getProductById,
 } from "../services/api";
+import {
+  selectCartItems,
+  selectCartTotalItems,
+  selectCartTotalPrice,
+  selectAppliedCoupon,
+  selectDiscountAmount,
+  selectFinalTotalPrice,
+  clearCart,
+} from "../redux/cartSlice";
 
 function Checkout() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const storeId = "6a906244ca9fe895152f0133";
+  const cartItems = useSelector(selectCartItems);
+  const totalItems = useSelector(selectCartTotalItems);
+  const totalPrice = useSelector(selectCartTotalPrice);
+  const appliedCoupon = useSelector(selectAppliedCoupon);
+  const discountAmount = useSelector(selectDiscountAmount);
+  const finalTotalPrice = useSelector(selectFinalTotalPrice);
 
-  const [cartItems, setCartItems] = useState([]);
+  const targetStoreId =
+    cartItems[0]?.storeId || cartItems[0]?.store?._id || cartItems[0]?.store;
+  const storeName = cartItems[0]?.storeName || "Store";
 
   const [shippingAddress, setShippingAddress] = useState({
     name: "",
@@ -24,47 +42,8 @@ function Checkout() {
     pincode: "",
   });
 
-  const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    const loadCart = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const data = await getCart(storeId);
-
-        const items = (data.items || []).map((item) => ({
-          id: item.productId._id,
-          name: item.productId.name,
-          price: item.productId.price,
-          image: item.productId.images?.[0] || "",
-          quantity: item.quantity,
-        }));
-
-        setCartItems(items);
-      } catch (err) {
-        console.error("Load checkout cart error:", err);
-        setError(err.message || "Failed to load cart.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCart();
-  }, []);
-
-  const totalItems = cartItems.reduce(
-    (total, item) => total + item.quantity,
-    0
-  );
-
-  const totalPrice = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -135,58 +114,50 @@ function Checkout() {
 
       name: "Zaalima",
 
-      description: "Payment Test Product Order",
+      description: `Order from ${storeName}`,
 
       order_id: razorpayOrder.id,
 
-     handler: async function (response) {
-  console.log("RAZORPAY SUCCESS HANDLER FIRED:", response);
+      handler: async function (response) {
+        console.log("RAZORPAY SUCCESS HANDLER FIRED:", response);
 
-  try {
-    setPlacingOrder(true);
-    setError("");
+        try {
+          setPlacingOrder(true);
+          setError("");
 
-    const verificationResult =
-      await verifyRazorpayPayment({
-        razorpay_order_id:
-          response.razorpay_order_id,
+          const verificationResult =
+            await verifyRazorpayPayment({
+              razorpay_order_id:
+                response.razorpay_order_id,
 
-        razorpay_payment_id:
-          response.razorpay_payment_id,
+              razorpay_payment_id:
+                response.razorpay_payment_id,
 
-        razorpay_signature:
-          response.razorpay_signature,
-      });
+              razorpay_signature:
+                response.razorpay_signature,
+            });
 
-    console.log(
-      "Payment verification result:",
-      verificationResult
-    );
+          console.log(
+            "Payment verification result:",
+            verificationResult
+          );
 
-    alert(
-      "Payment successful and verified!"
-    );
+          dispatch(clearCart());
+          navigate(`/order-success/${mongoOrderId}`);
+        } catch (err) {
+          console.error(
+            "Payment verification error:",
+            err
+          );
 
-    navigate(`/orders/${mongoOrderId}`);
-  } catch (err) {
-    console.error(
-      "Payment verification error:",
-      err
-    );
-
-    setError(
-      err.message ||
-        "Payment verification failed."
-    );
-
-    alert(
-      err.message ||
-        "Payment verification failed."
-    );
-  } finally {
-    setPlacingOrder(false);
-  }
-},
+          setError(
+            err.message ||
+              "Payment verification failed."
+          );
+        } finally {
+          setPlacingOrder(false);
+        }
+      },
 
       prefill: {
         name: shippingAddress.name,
@@ -241,13 +212,56 @@ function Checkout() {
       setPlacingOrder(true);
       setError("");
 
+      let activeStoreId =
+        targetStoreId ||
+        cartItems[0]?.storeId ||
+        cartItems[0]?.store?._id ||
+        cartItems[0]?.store;
+
+      // Auto-recovery: If storeId was missing from older cart items, fetch product to resolve store
+      if (!activeStoreId && cartItems.length > 0) {
+        try {
+          const firstProductId = cartItems[0].id || cartItems[0]._id;
+          if (firstProductId) {
+            const productData = await getProductById(firstProductId);
+            if (productData?.product?.storeId) {
+              activeStoreId =
+                typeof productData.product.storeId === "object"
+                  ? productData.product.storeId._id
+                  : productData.product.storeId;
+            }
+          }
+        } catch (recoveryErr) {
+          console.warn("Could not auto-recover storeId for cart item:", recoveryErr);
+        }
+      }
+
+      if (!activeStoreId) {
+        setError("Unable to identify store for this order. Please clear your cart and re-add the item.");
+        setPlacingOrder(false);
+        return;
+      }
+
       /*
        * Step 1:
        * Create MongoDB order.
        */
+      const productsPayload = cartItems.map((item) => ({
+        productId: item.id || item._id,
+        quantity: item.quantity,
+      }));
+
       const result = await createOrder({
-        storeId,
-        shippingAddress,
+        storeId: activeStoreId,
+        products: productsPayload,
+        shippingAddress: {
+          street: shippingAddress.address,
+          city: shippingAddress.city,
+          state: shippingAddress.state,
+          zipCode: shippingAddress.pincode,
+          country: "India",
+        },
+        couponCode: appliedCoupon?.code,
       });
 
       const mongoOrderId = result.order._id;
@@ -279,16 +293,6 @@ function Checkout() {
       setPlacingOrder(false);
     }
   };
-
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-600">
-          Loading checkout...
-        </p>
-      </main>
-    );
-  }
 
   if (error && cartItems.length === 0) {
     return (
@@ -533,18 +537,25 @@ function Checkout() {
                 </div>
               ))}
 
-              <div className="border-t border-gray-200 pt-4">
+              <div className="border-t border-gray-200 pt-4 space-y-2.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">
-                    Items
+                    Subtotal ({totalItems} items)
                   </span>
 
                   <span className="font-medium">
-                    {totalItems}
+                    ₹{totalPrice.toLocaleString("en-IN")}
                   </span>
                 </div>
 
-                <div className="mt-3 flex justify-between text-sm">
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                    <span>Coupon Discount</span>
+                    <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-sm">
                   <span className="text-gray-600">
                     Shipping
                   </span>
@@ -560,10 +571,7 @@ function Checkout() {
                   </span>
 
                   <span className="text-xl font-bold">
-                    ₹
-                    {totalPrice.toLocaleString(
-                      "en-IN"
-                    )}
+                    ₹{finalTotalPrice.toLocaleString("en-IN")}
                   </span>
                 </div>
               </div>
