@@ -4,6 +4,7 @@ import {
   getStoreBySlug,
   getStoreProducts,
 } from "../services/api";
+import ProductCard from "../components/ProductCard";
 
 function StoreDetails() {
   const { slug } = useParams();
@@ -238,71 +239,17 @@ function StoreDetails() {
         ) : (
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-
             {products.map((product) => (
-
-              <div
+              <ProductCard
                 key={product._id}
-                className="group overflow-hidden rounded-2xl border border-[#E4E1D9] bg-white transition hover:-translate-y-1 hover:border-[#B8892B]/40 hover:shadow-md"
-              >
-
-                {/* Product Image */}
-                <Link to={`/products/${product._id}`}>
-
-                  <div className="flex h-64 items-center justify-center overflow-hidden bg-[#FAFAF7]">
-
-                    {product.images &&
-                    product.images.length > 0 ? (
-
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                      />
-
-                    ) : (
-
-                      <span className="text-sm text-[#9A9D96]">
-                        Product Image
-                      </span>
-
-                    )}
-
-                  </div>
-
-                </Link>
-
-                {/* Product Information */}
-                <div className="p-5">
-
-                  <p className="text-xs font-medium uppercase tracking-wide text-[#B8892B]">
-                    {store.name}
-                  </p>
-
-                  <Link to={`/products/${product._id}`}>
-
-                    <h3 className="mt-2 font-semibold text-[#14201C] hover:underline">
-                      {product.name}
-                    </h3>
-
-                  </Link>
-
-                  <p className="mt-2 text-lg font-bold text-[#14201C]">
-                    ₹{Number(product.price).toLocaleString("en-IN")}
-                  </p>
-
-                  <p className="mt-2 text-sm text-[#6B6F6D]">
-                    {product.inventoryCount > 0
-                      ? `${product.inventoryCount} available`
-                      : "Out of stock"}
-                  </p>
-
-                </div>
-
-              </div>
-
+                product={{
+                  ...product,
+                  storeId: store._id,
+                  storeName: store.name,
+                  store: store.name,
+                }}
+              />
             ))}
-
           </div>
 
         )}

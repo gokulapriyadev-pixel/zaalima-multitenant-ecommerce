@@ -10,10 +10,23 @@ function ProductCard({ product }) {
   const inventory =
     product.inventoryCount ?? product.stock ?? 10;
 
+  const targetStoreId =
+    typeof product.storeId === "object"
+      ? product.storeId?._id
+      : product.storeId || product.store?._id;
+
+  const targetStoreName =
+    product.store?.name ||
+    (typeof product.store === "string" ? product.store : null) ||
+    product.storeId?.name ||
+    product.storeName ||
+    "Store";
+
   const handleAddToCart = () => {
     dispatch(
       addToCart({
         id: product.id || product._id,
+        _id: product.id || product._id,
         name: product.name,
         price: product.price,
         image:
@@ -22,6 +35,8 @@ function ProductCard({ product }) {
             ? product.images[0]
             : ""),
         stock: inventory,
+        storeId: targetStoreId,
+        storeName: targetStoreName,
         quantity: 1,
       })
     );

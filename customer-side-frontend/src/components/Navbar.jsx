@@ -6,6 +6,7 @@ import {
   selectIsAuthenticated,
   selectUser,
 } from "../redux/authSlice";
+import { selectCartTotalItems } from "../redux/cartSlice";
 
 const NAV_LINKS = [
   { label: "Home", to: "/" },
@@ -19,6 +20,7 @@ const Navbar = () => {
 
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectUser);
+  const cartTotalItems = useSelector(selectCartTotalItems);
 
   const navLinkClasses = ({ isActive }) =>
     `relative pb-1 text-sm font-medium transition ${
@@ -56,30 +58,33 @@ const Navbar = () => {
               {link.label}
             </NavLink>
           ))}
-          {isAuthenticated &&
-          ["vendor", "super_admin"].includes(user?.role) && (
-          <NavLink
-              to="/analytics"
+
+          {/* Customer Orders Link */}
+          {isAuthenticated && (
+            <NavLink
+              to="/orders"
               className={navLinkClasses}
-        >       
-          Analytics
-          </NavLink>
-        )}
-
-
+            >
+              My Orders
+            </NavLink>
+          )}
         </div>
-      
 
         {/* Right Side */}
         <div className="flex items-center gap-3">
 
-          {/* Cart */}
+          {/* Cart Icon with Dynamic Count Badge */}
           <Link
             to="/cart"
             className="relative rounded-full p-2 text-[#14201C] transition hover:bg-[#0F2C27]/5"
             aria-label="Shopping cart"
           >
             <ShoppingCart size={20} strokeWidth={1.75} />
+            {cartTotalItems > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#B8892B] text-[10px] font-bold text-white shadow-sm animate-in fade-in">
+                {cartTotalItems > 99 ? "99+" : cartTotalItems}
+              </span>
+            )}
           </Link>
 
           {!isAuthenticated ? (
@@ -101,10 +106,10 @@ const Navbar = () => {
               </Link>
             </>
           ) : (
-            <>
-              {/* User */}
+            <div className="flex items-center gap-3">
+              {/* User greeting */}
               <span className="hidden text-sm font-medium text-[#14201C] sm:block">
-                Hi, {user?.name || "Customer"}
+                Hi, {user?.name ? user.name.split(" ")[0] : "Customer"}
               </span>
 
               {/* Logout */}
@@ -115,7 +120,7 @@ const Navbar = () => {
               >
                 Logout
               </button>
-            </>
+            </div>
           )}
 
         </div>

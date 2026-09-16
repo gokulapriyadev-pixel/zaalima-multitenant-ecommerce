@@ -3,9 +3,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 
 import Login from "./pages/Login";
-import Register from "./pages/Regiser";
+import Register from "./pages/Register";
 
 import StoreLayout from "./components/StoreLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
 import Stores from "./pages/Stores";
@@ -16,8 +17,7 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
-
-import Analytics from "./pages/Analytics";
+import OrderSuccess from "./pages/OrderSuccess";
 
 import Scrolltop from "./components/ScrollTop";
 
@@ -28,77 +28,43 @@ function App() {
 
       <Routes>
         {/* =====================================
-            CUSTOMER STORE
+            CUSTOMER STORE (PUBLIC)
         ===================================== */}
-
         <Route element={<StoreLayout />}>
           {/* Home */}
-          <Route
-            path="/"
-            element={<Home />}
-          />
+          <Route path="/" element={<Home />} />
 
           {/* All Stores */}
-          <Route
-            path="/stores"
-            element={<Stores />}
-          />
+          <Route path="/stores" element={<Stores />} />
 
           {/* Single Store */}
-          <Route
-            path="/stores/:slug"
-            element={<StoreDetails />}
-          />
+          <Route path="/stores/:slug" element={<StoreDetails />} />
 
           {/* All Products */}
-          <Route
-            path="/products"
-            element={<Products />}
-          />
+          <Route path="/products" element={<Products />} />
 
           {/* Single Product */}
-          <Route
-            path="/products/:id"
-            element={<ProductDetails />}
-          />
+          <Route path="/products/:id" element={<ProductDetails />} />
 
           {/* Cart */}
-          <Route
-            path="/cart"
-            element={<Cart />}
-          />
+          <Route path="/cart" element={<Cart />} />
 
-         <Route path="/orders" element={<Orders />} />
-        <Route path="/orders/:id" element={<OrderDetails />} />
-
-          {/* Checkout */}
-          <Route
-            path="/checkout"
-            element={<Checkout />}
-          />
+          {/* =====================================
+              PROTECTED CUSTOMER ROUTES
+          ===================================== */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/:id" element={<OrderDetails />} />
+            <Route path="/order-success/:id" element={<OrderSuccess />} />
+          </Route>
         </Route>
 
         {/* =====================================
-            AUTH
+            AUTH (PUBLIC)
         ===================================== */}
-
-        {/* Login */}
-        
-        <Route
-            path="/analytics"
-            element={<Analytics />}
-          />
-        
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        {/* Register */}
-        <Route
-          path="/register"
-          element={<Register />}
-        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </BrowserRouter>
   );

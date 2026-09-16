@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Search } from "lucide-react";
 import { getPublicStores } from "../services/api";
 
 function Stores() {
@@ -23,6 +24,7 @@ function Stores() {
   };
 
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -48,14 +50,20 @@ function Stores() {
   }, []);
 
   const filteredStores = useMemo(() => {
-    if (selectedCategory === "all") {
-      return stores;
-    }
+    return stores.filter((store) => {
+      const matchesCategory =
+        selectedCategory === "all" || !store.category || store.category === selectedCategory;
 
-    return stores.filter(
-      (store) => store.category === selectedCategory
-    );
-  }, [selectedCategory, stores]);
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        (store.name && store.name.toLowerCase().includes(q)) ||
+        (store.slug && store.slug.toLowerCase().includes(q)) ||
+        (store.description && store.description.toLowerCase().includes(q));
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [selectedCategory, stores, searchQuery]);
 
   if (loading) {
     return (
@@ -117,32 +125,54 @@ function Stores() {
       {/* Stores */}
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
 
-        {/* Filter */}
+        {/* Search & Filter */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-          <p className="text-sm text-[#6B6F6D]">
-            Showing{" "}
-            <span className="font-semibold text-[#14201C]">
-              {filteredStores.length}
-            </span>{" "}
-            {filteredStores.length === 1 ? "store" : "stores"}
-          </p>
-
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="rounded-lg border border-[#E4E1D9] bg-white px-4 py-2.5 text-sm text-[#14201C] outline-none transition focus:border-[#B8892B] focus:ring-2 focus:ring-[#B8892B]/30"
-          >
-            {CATEGORIES.map((category) => (
-              <option
-                key={category.value}
-                value={category.value}
+          <div className="relative w-full max-w-md">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+              <Search size={18} />
+            </span>
+            <input
+              type="text"
+              placeholder="Search stores by name or description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-12 py-2.5 rounded-xl border border-[#E4E1D9] bg-white text-sm text-[#14201C] placeholder-gray-400 outline-none focus:border-[#B8892B] focus:ring-2 focus:ring-[#B8892B]/20 transition shadow-xs"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-gray-400 hover:text-gray-600"
               >
-                {category.label}
-              </option>
-            ))}
-          </select>
+                Clear
+              </button>
+            )}
+          </div>
 
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-[#6B6F6D] whitespace-nowrap">
+              Showing{" "}
+              <span className="font-semibold text-[#14201C]">
+                {filteredStores.length}
+              </span>{" "}
+              {filteredStores.length === 1 ? "store" : "stores"}
+            </p>
+
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="rounded-xl border border-[#E4E1D9] bg-white px-4 py-2.5 text-sm text-[#14201C] outline-none transition focus:border-[#B8892B] focus:ring-2 focus:ring-[#B8892B]/30"
+            >
+              {CATEGORIES.map((category) => (
+                <option
+                  key={category.value}
+                  value={category.value}
+                >
+                  {category.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Store Grid */}

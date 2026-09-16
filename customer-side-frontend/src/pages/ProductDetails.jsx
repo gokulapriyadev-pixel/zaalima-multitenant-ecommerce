@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import {
-  getProductById,
-  addProductToCart,
-} from "../services/api";
+import { useDispatch } from "react-redux";
+import { getProductById } from "../services/api";
+import { addToCart } from "../redux/cartSlice";
 
 function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -99,7 +99,7 @@ function ProductDetails() {
   // ADD TO CART
   // ==========================================
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     try {
       setAddingToCart(true);
       setCartMessage("");
@@ -109,41 +109,38 @@ function ProductDetails() {
           ? product.storeId?._id
           : product.storeId;
 
-      if (!storeId) {
-        throw new Error(
-          "Store information is missing for this product."
-        );
+      const storeName =
+        product.storeId?.name || product.store?.name || "Store";
+
+      const inventory = product.inventoryCount ?? product.stock ?? 10;
+      if (inventory <= 0) {
+        setCartMessage("This product is currently out of stock.");
+        setAddingToCart(false);
+        return;
       }
 
-      if (!product._id) {
-        throw new Error(
-          "Product ID is missing."
-        );
-      }
-
-      await addProductToCart(
-        storeId,
-        product._id,
-        1
+      dispatch(
+        addToCart({
+          id: product._id,
+          _id: product._id,
+          name: product.name,
+          price: product.price,
+          image: image || "",
+          stock: inventory,
+          storeId: storeId,
+          storeName: storeName,
+          quantity: 1,
+        })
       );
 
-      setCartMessage(
-        "Product added to cart!"
-      );
+      setCartMessage("Product added to cart!");
 
       setTimeout(() => {
         navigate("/cart");
-      }, 500);
+      }, 400);
     } catch (err) {
-      console.error(
-        "Failed to add product to cart:",
-        err
-      );
-
-      setCartMessage(
-        err.message ||
-          "Failed to add product to cart"
-      );
+      console.error("Failed to add product to cart:", err);
+      setCartMessage(err.message || "Failed to add product to cart");
     } finally {
       setAddingToCart(false);
     }
